@@ -4,6 +4,13 @@ const Firebird = require('node-firebird-dev');
 const app = express();
 const PORT = 3000;
 
+// CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+});
+
 // Firebird connection options using LECTURA
 const dbOptions = {
   host: '192.168.1.30',
@@ -19,11 +26,26 @@ app.get('/', (req, res) => {
 
 app.get('/articles', (req, res) => {
   const search = req.query.search;
+  const page = parseInt(req.query.page) || 1;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 rows
+  const offset = (page - 1) * limit;
+  
   const baseWhere = "a.EMP_ID = 2";
   const searchFilter = search
     ? `AND UPPER(a.CALC_DESC_EXTEND) LIKE '%${search.replace(/'/g, "''").toUpperCase()}%'`
     : "";
 
+  // Count query for total records
+  const countSql = `
+    SELECT COUNT(*) as TOTAL_COUNT
+    FROM
+      ARTICULOS a
+    LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
+    LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
+    WHERE ${baseWhere} ${searchFilter}
+  `;
+
+  // Main query with pagination
   const sql = `
     SELECT
       a.ART_ID,
@@ -36,22 +58,44 @@ app.get('/articles', (req, res) => {
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     WHERE ${baseWhere} ${searchFilter}
-    ROWS 20
+    ORDER BY a.ART_ID
+    ROWS ${offset + 1} TO ${offset + limit}
   `;
 
   Firebird.attach(dbOptions, (err, db) => {
     if (err) return res.status(500).json({ error: 'DB connection failed' });
 
-    db.query(sql, (err, articles) => {
+    // First, get the total count
+    db.query(countSql, (err, countResult) => {
       if (err) {
         db.detach();
-        return res.status(500).json({ error: 'Query failed', details: err.message });
+        return res.status(500).json({ error: 'Count query failed', details: err.message });
       }
 
-      if (articles.length === 0) {
-        db.detach();
-        return res.json([]);
-      }
+      const totalCount = countResult[0] ? countResult[0].TOTAL_COUNT : 0;
+      const totalPages = Math.min(Math.ceil(totalCount / limit), 100); // Max 100 pages
+
+      // Then get the articles
+      db.query(sql, (err, articles) => {
+        if (err) {
+          db.detach();
+          return res.status(500).json({ error: 'Query failed', details: err.message });
+        }
+
+        if (articles.length === 0) {
+          db.detach();
+          return res.json({
+            data: [],
+            pagination: {
+              page,
+              limit,
+              total: totalCount,
+              totalPages,
+              hasNext: page < totalPages,
+              hasPrev: page > 1
+            }
+          });
+        }
 
       const ids = articles.map(a => a.ART_ID).join(',');
 
@@ -116,7 +160,17 @@ app.get('/articles', (req, res) => {
             };
           });
 
-          return res.json(result);
+          return res.json({
+            data: result,
+            pagination: {
+              page,
+              limit,
+              total: totalCount,
+              totalPages,
+              hasNext: page < totalPages,
+              hasPrev: page > 1
+            }
+          });
         }
 
         const key = keys[i];
@@ -129,6 +183,7 @@ app.get('/articles', (req, res) => {
       };
 
       runSequentially();
+      });
     });
   });
 });
