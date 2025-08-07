@@ -77,18 +77,15 @@ app.get('/articles', (req, res) => {
 
 app.get('/articles/dependencies', (req, res) => {
   Firebird.attach(dbOptions, (err, db) => {
-    if (err) {
-      console.error('❌ DB Connection Error:', err.message);
-      return res.status(500).json({ error: 'Database connection failed' });
-    }
+    if (err) return res.status(500).json({ error: 'Database connection failed' });
 
-    const sql = 'SELECT FIRST 3 * FROM ART_ART';
+    const sql = 'SELECT FIRST 3 * FROM ARTLPR';
 
     db.query(sql, (err, result) => {
       db.detach();
 
       if (err) {
-        console.error('❌ ART_ART error:', err.message);
+        console.error('❌ ARTLPR error:', err.message);
         return res.status(500).json({ error: 'Query failed', details: err.message });
       }
 
