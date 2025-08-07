@@ -79,46 +79,21 @@ app.get('/articles/dependencies', (req, res) => {
   Firebird.attach(dbOptions, (err, db) => {
     if (err) return res.status(500).json({ error: 'Database connection failed' });
 
-    const queries = {
-      art_aplicacion: 'SELECT FIRST 1 * FROM ART_APLICACION',
-      art_art: 'SELECT FIRST 1 * FROM ART_ART',
-      artlpr: 'SELECT FIRST 1 * FROM ARTLPR',
-      stock: 'SELECT FIRST 1 * FROM STOCK'
-    };
+    const sql = 'SELECT FIRST 3 * FROM ART_APLICACION';
 
-    const results = {};
-    let remaining = Object.keys(queries).length;
-    let responded = false;
+    db.query(sql, (err, result) => {
+      db.detach();
 
-    Object.entries(queries).forEach(([key, sql]) => {
-      try {
-        db.query(sql, (err, data) => {
-          if (err) results[key] = { error: err.message };
-          else results[key] = data;
-
-          remaining--;
-          if (remaining === 0 && !responded) {
-            responded = true;
-            db.detach();
-            res.json(results);
-          }
-        });
-      } catch (e) {
-        results[key] = { error: e.message };
-        remaining--;
+      if (err) {
+        console.error('❌ ART_APLICACION error:', err.message);
+        return res.status(500).json({ error: 'Query failed', details: err.message });
       }
+
+      res.json(result);
     });
-
-    // Failsafe in case something hangs
-    setTimeout(() => {
-      if (!responded) {
-        responded = true;
-        db.detach();
-        res.status(504).json({ error: 'Timeout. Some queries took too long.', partial: results });
-      }
-    }, 10000); // 10 seconds max
   });
 });
+
 
 
 
