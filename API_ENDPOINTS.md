@@ -99,16 +99,23 @@ GET /articles?search=gol power bujia
 
 ---
 
-### 3. List All Applications
+### 3. Search Applications
 **GET** `/aplicaciones`
 
-Returns a complete list of all applications from the APLICACIONES table.
+Returns applications from the APLICACIONES table with optional search functionality.
 
-**Parameters:** None
+**Parameters:**
+- `search` (string, optional): Search term - supports word-based search across application paths
 
-**Example Request:**
+**Example Requests:**
 ```bash
+# Get all applications
 GET /aplicaciones
+
+# Search for specific applications
+GET /aplicaciones?search=chevrolet
+GET /aplicaciones?search=motor ford
+GET /aplicaciones?search=corsa 1.4
 ```
 
 **Response Format:**

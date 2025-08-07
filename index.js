@@ -34,9 +34,27 @@ app.get('/', (req, res) => {
   res.send('API is working');
 });
 
-// Aplicaciones endpoint - returns all applications
+// Aplicaciones endpoint - returns all applications with optional search
 app.get('/aplicaciones', (req, res) => {
   const startTime = Date.now();
+  const search = req.query.search;
+  
+  // Create search filter similar to articles endpoint
+  let searchFilter = "";
+  if (search) {
+    const words = search.trim().split(/\s+/)
+      .filter(word => word.length > 0)
+      .slice(0, 5); // Limit to 5 words max for performance
+    
+    if (words.length > 0) {
+      const wordConditions = words.map(word => {
+        const cleanWord = word.replace(/'/g, "''").toUpperCase();
+        return `UPPER(APLICACION_PATH) LIKE '%${cleanWord}%'`;
+      });
+      
+      searchFilter = `WHERE (${wordConditions.join(' AND ')})`;
+    }
+  }
   
   const sql = `
     SELECT 
@@ -44,6 +62,7 @@ app.get('/aplicaciones', (req, res) => {
       APLICACION_PATH,
       NOTA_MEMO
     FROM APLICACIONES
+    ${searchFilter}
     ORDER BY APLICACION_PATH
   `;
 
@@ -78,7 +97,7 @@ app.get('/aplicaciones', (req, res) => {
 
       db.detach();
       
-      console.log(`📋 Aplicaciones: ${result.length} records | Time: ${queryTime}ms`);
+      console.log(`📋 Aplicaciones: "${search || 'all'}" | Results: ${result.length} | Time: ${queryTime}ms`);
       
       res.json({
         data: result,
