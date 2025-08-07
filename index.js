@@ -42,7 +42,7 @@ app.get('/aplicaciones', (req, res) => {
     SELECT 
       APLIC_ID,
       APLICACION_PATH,
-      NOTA
+      NOTA_MEMO
     FROM APLICACIONES
     ORDER BY APLICACION_PATH
   `;
@@ -73,7 +73,7 @@ app.get('/aplicaciones', (req, res) => {
       const result = aplicaciones.map(app => ({
         id: app.APLIC_ID,
         aplicacion: safeTrim(app.APLICACION_PATH) || '',
-        nota: safeTrim(app.NOTA)
+        nota: safeTrim(app.NOTA_MEMO)
       }));
 
       db.detach();
