@@ -29,11 +29,15 @@ app.get('/articles', (req, res) => {
       SELECT
         a.ART_ID,
         a.CALC_DESC_EXTEND,
-        m.MARCA
+        a.NOTA,
+        m.MARCA,
+        r.DFE AS RUBRO_NOMBRE
       FROM
         ARTICULOS a
       LEFT JOIN
         MARCAS m ON a.MARCA_ID = m.MARCA_ID
+      LEFT JOIN
+        ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
       ROWS 20
     `;
 
@@ -45,17 +49,19 @@ app.get('/articles', (req, res) => {
         return res.status(500).json({ error: 'Query failed' });
       }
 
-      // Clean and format result
       const cleaned = result.map(row => ({
         id: row.ART_ID,
         descripcion: row.CALC_DESC_EXTEND ? row.CALC_DESC_EXTEND.trim() : '',
-        marca: row.MARCA ? row.MARCA.trim() : null
+        marca: row.MARCA ? row.MARCA.trim() : null,
+        rubro: row.RUBRO_NOMBRE ? row.RUBRO_NOMBRE.trim() : null,
+        nota: row.NOTA ? row.NOTA.trim() : null
       }));
 
       res.json(cleaned);
     });
   });
 });
+
 
 
 // Get foreign key relations of "articulos"
