@@ -34,6 +34,63 @@ app.get('/', (req, res) => {
   res.send('API is working');
 });
 
+// Aplicaciones endpoint - returns all applications
+app.get('/aplicaciones', (req, res) => {
+  const startTime = Date.now();
+  
+  const sql = `
+    SELECT 
+      APLIC_ID,
+      APLICACION_PATH,
+      NOTA
+    FROM APLICACIONES
+    ORDER BY APLICACION_PATH
+  `;
+
+  Firebird.attach(dbOptions, (err, db) => {
+    if (err) {
+      console.error('DB connection failed:', err);
+      return res.status(500).json({ 
+        error: 'Database connection failed',
+        details: err.message 
+      });
+    }
+
+    db.query(sql, (err, aplicaciones) => {
+      const endTime = Date.now();
+      const queryTime = endTime - startTime;
+
+      if (err) {
+        db.detach();
+        console.error('Query failed:', err);
+        return res.status(500).json({ 
+          error: 'Query failed', 
+          details: err.message 
+        });
+      }
+
+      // Process results and safely trim strings
+      const result = aplicaciones.map(app => ({
+        id: app.APLIC_ID,
+        aplicacion: safeTrim(app.APLICACION_PATH) || '',
+        nota: safeTrim(app.NOTA)
+      }));
+
+      db.detach();
+      
+      console.log(`📋 Aplicaciones: ${result.length} records | Time: ${queryTime}ms`);
+      
+      res.json({
+        data: result,
+        meta: {
+          total: result.length,
+          queryTime: `${queryTime}ms`
+        }
+      });
+    });
+  });
+});
+
 app.get('/articles', (req, res) => {
   const startTime = Date.now(); // Performance monitoring
   const search = req.query.search;
