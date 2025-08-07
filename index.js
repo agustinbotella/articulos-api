@@ -120,6 +120,7 @@ app.get('/articles', (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 rows
   const offset = (page - 1) * limit;
   const onlyWithStock = req.query.onlyWithStock === 'true'; // Stock filter
+  const applicationId = req.query.applicationId ? parseInt(req.query.applicationId) : null; // Application filter
   
   const baseWhere = "a.EMP_ID = 2";
   
@@ -153,15 +154,26 @@ app.get('/articles', (req, res) => {
     ? "LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12" 
     : "";
 
+  // Add application filter join if needed
+  const applicationJoin = applicationId 
+    ? "LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID" 
+    : "";
+
+  // Add application filter to WHERE clause if needed
+  const applicationFilter = applicationId 
+    ? `AND aa.APLIC_ID = ${applicationId}` 
+    : "";
+
   // Count query for total records
   const countSql = `
-    SELECT COUNT(*) as TOTAL_COUNT
+    SELECT COUNT(DISTINCT a.ART_ID) as TOTAL_COUNT
     FROM
       ARTICULOS a
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
-    WHERE ${baseWhere} ${searchFilter} ${stockFilter}
+    ${applicationJoin}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
   `;
 
   // Main query with pagination
