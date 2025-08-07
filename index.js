@@ -25,14 +25,8 @@ app.get('/articles', (req, res) => {
       return res.status(500).json({ error: 'Database connection failed' });
     }
 
-    db.query('SELECT FIRST 20 * FROM articulos', (err, result) => {
-      db.detach();
-
-      if (err) {
-        console.error('❌ Query Error:', err.message);
-        return res.status(500).json({ error: 'Query failed' });
-      }
-
+    db.query('SELECT FIRST 1 * FROM MARCAS', (err, result) => {
+      console.log(result);
       res.json(result);
     });
   });
