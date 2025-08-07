@@ -38,6 +38,9 @@ app.get('/', (req, res) => {
 app.get('/aplicaciones', (req, res) => {
   const startTime = Date.now();
   const search = req.query.search;
+  const page = parseInt(req.query.page) || 1;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 20); // Max 20 rows, default 20
+  const offset = (page - 1) * limit;
   
   // Create search filter similar to articles endpoint
   let searchFilter = "";
@@ -56,6 +59,15 @@ app.get('/aplicaciones', (req, res) => {
     }
   }
   
+  // Count query for total records
+  const countSql = `
+    SELECT COUNT(DISTINCT ap.APLIC_ID) as TOTAL_COUNT
+    FROM APLICACIONES ap
+    LEFT JOIN ART_APLICACION aa ON ap.APLIC_ID = aa.APLIC_ID
+    ${searchFilter}
+  `;
+
+  // Main query with pagination
   const sql = `
     SELECT 
       ap.APLIC_ID,
@@ -69,6 +81,7 @@ app.get('/aplicaciones', (req, res) => {
     ${searchFilter}
     GROUP BY ap.APLIC_ID, ap.APLICACION_PATH, ap.NOTA_MEMO, aa.NOTA
     ORDER BY ap.APLICACION_PATH
+    ROWS ${offset + 1} TO ${offset + limit}
   `;
 
   Firebird.attach(dbOptions, (err, db) => {
@@ -80,38 +93,85 @@ app.get('/aplicaciones', (req, res) => {
       });
     }
 
-    db.query(sql, (err, aplicaciones) => {
-      const endTime = Date.now();
-      const queryTime = endTime - startTime;
-
+    // First get the total count
+    db.query(countSql, (err, countResult) => {
       if (err) {
         db.detach();
-        console.error('Query failed:', err);
+        console.error('Count query failed:', err);
         return res.status(500).json({ 
-          error: 'Query failed', 
+          error: 'Count query failed', 
           details: err.message 
         });
       }
 
-      // Process results and safely trim strings
-      const result = aplicaciones.map(app => ({
-        id: app.APLIC_ID,
-        aplicacion: safeTrim(app.APLICACION_PATH) || '',
-        nota: safeTrim(app.NOTA_MEMO),
-        artAplicacionNota: safeTrim(app.ART_APLICACION_NOTA),
-        articleCount: app.ARTICLE_COUNT || 0
-      }));
+      const totalCount = countResult[0]?.TOTAL_COUNT || 0;
+      const totalPages = Math.ceil(totalCount / limit);
 
-      db.detach();
-      
-      console.log(`📋 Aplicaciones: "${search || 'all'}" | Results: ${result.length} | Time: ${queryTime}ms`);
-      
-      res.json({
-        data: result,
-        meta: {
-          total: result.length,
-          queryTime: `${queryTime}ms`
+      // If no results, return early
+      if (totalCount === 0) {
+        db.detach();
+        const endTime = Date.now();
+        const queryTime = endTime - startTime;
+        
+        console.log(`📋 Aplicaciones: "${search || 'all'}" | Page: ${page} | Results: 0 | Total: 0 | Time: ${queryTime}ms`);
+        
+        return res.json({
+          data: [],
+          pagination: {
+            currentPage: page,
+            totalPages: Math.min(totalPages, 100), // Max 100 pages
+            totalCount: totalCount,
+            limit: limit,
+            hasNextPage: false,
+            hasPreviousPage: false
+          },
+          meta: {
+            queryTime: queryTime
+          }
+        });
+      }
+
+      // Execute main query
+      db.query(sql, (err, aplicaciones) => {
+        const endTime = Date.now();
+        const queryTime = endTime - startTime;
+
+        if (err) {
+          db.detach();
+          console.error('Query failed:', err);
+          return res.status(500).json({ 
+            error: 'Query failed', 
+            details: err.message 
+          });
         }
+
+        // Process results and safely trim strings
+        const result = aplicaciones.map(app => ({
+          id: app.APLIC_ID,
+          aplicacion: safeTrim(app.APLICACION_PATH) || '',
+          nota: safeTrim(app.NOTA_MEMO),
+          artAplicacionNota: safeTrim(app.ART_APLICACION_NOTA),
+          articleCount: app.ARTICLE_COUNT || 0
+        }));
+
+        db.detach();
+        
+        console.log(`📋 Aplicaciones: "${search || 'all'}" | Page: ${page} | Results: ${result.length} | Total: ${totalCount} | Time: ${queryTime}ms`);
+        
+        res.json({
+          data: result,
+          pagination: {
+            currentPage: page,
+            totalPages: Math.min(totalPages, 100), // Max 100 pages
+            totalCount: totalCount,
+            limit: limit,
+            hasNextPage: page < Math.min(totalPages, 100),
+            hasPreviousPage: page > 1
+          },
+          meta: {
+            queryTime: queryTime
+          }
+        });
       });
     });
   });

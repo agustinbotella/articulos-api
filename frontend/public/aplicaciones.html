@@ -138,6 +138,30 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- Results info -->
+                    <div class="row justify-content-center mt-3" id="resultsInfo" style="display: none;">
+                        <div class="col-auto">
+                            <small class="text-white">
+                                <i class="fas fa-info-circle"></i>
+                                <span id="totalCount">0</span> aplicaciones encontradas
+                                (Página <span id="currentPage">1</span> de <span id="totalPages">1</span>)
+                                • Tiempo: <span id="queryTime">0</span>ms
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination controls -->
+                    <div class="row justify-content-center mt-3" id="paginationControls" style="display: none;">
+                        <div class="col-auto">
+                            <button class="btn btn-outline-light btn-sm" id="prevPageBtn" disabled>
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </button>
+                            <button class="btn btn-outline-light btn-sm ms-2" id="nextPageBtn" disabled>
+                                Siguiente <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

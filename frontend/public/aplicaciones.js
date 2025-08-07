@@ -6,9 +6,14 @@ const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 const showAllButton = document.getElementById('showAllButton');
 const resultsContainer = document.getElementById('resultsContainer');
-const resultsInfo = document.querySelector('.results-info');
+const resultsInfo = document.getElementById('resultsInfo');
 const totalCountSpan = document.getElementById('totalCount');
+const currentPageSpan = document.getElementById('currentPage');
+const totalPagesSpan = document.getElementById('totalPages');
 const queryTimeSpan = document.getElementById('queryTime');
+const paginationControls = document.getElementById('paginationControls');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
 const loadingSpinner = document.querySelector('.loading-spinner');
 const noResults = document.querySelector('.no-results');
 const errorMessage = document.querySelector('.error-message');
@@ -16,49 +21,75 @@ const errorText = document.getElementById('errorText');
 
 // Current search state
 let currentQuery = '';
+let currentPage = 1;
+let pagination = null;
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
-    searchButton.addEventListener('click', () => performSearch());
-    showAllButton.addEventListener('click', () => showAllApplications());
+    searchButton.addEventListener('click', () => performSearch(1));
+    showAllButton.addEventListener('click', () => showAllApplications(1));
     
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            performSearch();
+            performSearch(1);
+        }
+    });
+    
+    prevPageBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (currentPage > 1) {
+            if (currentQuery) {
+                performSearch(currentPage - 1);
+            } else {
+                showAllApplications(currentPage - 1);
+            }
+        }
+    });
+    
+    nextPageBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (pagination && currentPage < pagination.totalPages) {
+            if (currentQuery) {
+                performSearch(currentPage + 1);
+            } else {
+                showAllApplications(currentPage + 1);
+            }
         }
     });
     
     // Load all applications on page load
-    showAllApplications();
+    showAllApplications(1);
 });
 
 // Main search function
-function performSearch() {
+function performSearch(page = 1) {
     const query = searchInput.value.trim();
     
     if (!query) {
-        showAllApplications();
+        showAllApplications(page);
         return;
     }
 
     currentQuery = query;
-    searchApplications(query);
+    currentPage = page;
+    searchApplications(query, page);
 }
 
 // Show all applications
-function showAllApplications() {
+function showAllApplications(page = 1) {
     currentQuery = '';
+    currentPage = page;
     searchInput.value = '';
-    searchApplications('');
+    searchApplications('', page);
 }
 
 // Search applications function
-function searchApplications(query) {
+function searchApplications(query, page = 1) {
     showLoading();
     
-    let url = `${API_BASE_URL}/aplicaciones`;
+    let url = `${API_BASE_URL}/aplicaciones?page=${page}&limit=20`;
     if (query) {
-        url += `?search=${encodeURIComponent(query)}`;
+        url += `&search=${encodeURIComponent(query)}`;
     }
     
     fetch(url)
@@ -82,17 +113,22 @@ function searchApplications(query) {
 // Display search results
 function displayResults(response) {
     const aplicaciones = response.data || [];
+    const paginationData = response.pagination || null;
     const meta = response.meta || null;
+
+    pagination = paginationData;
 
     if (!aplicaciones || aplicaciones.length === 0) {
         showNoResults();
+        hidePaginationControls();
         return;
     }
 
     hideAllMessages();
     
-    // Update results info
-    updateResultsInfo(aplicaciones.length, meta);
+    // Update results info and pagination
+    updateResultsInfo(paginationData, meta);
+    updatePaginationControls(paginationData);
     
     // Group applications by hierarchy level
     const groupedApplications = groupByHierarchy(aplicaciones);
@@ -100,8 +136,11 @@ function displayResults(response) {
     const html = createApplicationsHTML(groupedApplications);
     resultsContainer.innerHTML = html;
     
-    // Show results info
+    // Show results info and pagination
     resultsInfo.style.display = 'block';
+    if (paginationData && paginationData.totalPages > 1) {
+        paginationControls.style.display = 'block';
+    }
 }
 
 // Group applications by hierarchy level for better organization
@@ -205,14 +244,46 @@ function searchArticlesForApplication(applicationId) {
 }
 
 // Update results info
-function updateResultsInfo(count, meta) {
-    totalCountSpan.textContent = count.toLocaleString();
+function updateResultsInfo(paginationData, meta) {
+    if (paginationData) {
+        totalCountSpan.textContent = paginationData.totalCount.toLocaleString();
+        currentPageSpan.textContent = paginationData.currentPage;
+        totalPagesSpan.textContent = paginationData.totalPages;
+    } else {
+        totalCountSpan.textContent = '0';
+        currentPageSpan.textContent = '1';
+        totalPagesSpan.textContent = '1';
+    }
     
     if (meta && meta.queryTime) {
         queryTimeSpan.textContent = meta.queryTime;
     } else {
         queryTimeSpan.textContent = '-';
     }
+}
+
+// Update pagination controls
+function updatePaginationControls(paginationData) {
+    if (!paginationData) {
+        hidePaginationControls();
+        return;
+    }
+    
+    // Update button states
+    prevPageBtn.disabled = !paginationData.hasPreviousPage;
+    nextPageBtn.disabled = !paginationData.hasNextPage;
+    
+    // Show pagination if more than one page
+    if (paginationData.totalPages > 1) {
+        paginationControls.style.display = 'block';
+    } else {
+        paginationControls.style.display = 'none';
+    }
+}
+
+// Hide pagination controls
+function hidePaginationControls() {
+    paginationControls.style.display = 'none';
 }
 
 // UI State Functions
@@ -232,6 +303,7 @@ function showNoResults() {
     noResults.style.display = 'block';
     resultsContainer.innerHTML = '';
     resultsInfo.style.display = 'none';
+    hidePaginationControls();
 }
 
 function showError(message) {
@@ -240,6 +312,7 @@ function showError(message) {
     errorMessage.style.display = 'block';
     resultsContainer.innerHTML = '';
     resultsInfo.style.display = 'none';
+    hidePaginationControls();
 }
 
 function hideAllMessages() {
