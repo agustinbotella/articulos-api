@@ -42,6 +42,7 @@ Abrir [http://localhost:3001](http://localhost:3001) en tu navegador.
 ### Paginación
 - **Navegación**: Botones anterior/siguiente para navegar entre páginas
 - **Información**: Total de artículos encontrados y página actual
+- **Tiempo de consulta**: Muestra el tiempo de ejecución de la búsqueda en la base de datos
 - **Límite**: Máximo 100 resultados por página, máximo 100 páginas
 - **Selector**: Cambio dinámico de resultados por página
 

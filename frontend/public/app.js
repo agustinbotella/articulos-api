@@ -11,6 +11,7 @@ const resultsInfo = document.getElementById('resultsInfo');
 const totalCountSpan = document.getElementById('totalCount');
 const currentPageSpan = document.getElementById('currentPage');
 const totalPagesSpan = document.getElementById('totalPages');
+const queryTimeSpan = document.getElementById('queryTime');
 const paginationContainer = document.getElementById('paginationContainer');
 const prevPageBtn = document.getElementById('prevPage');
 const nextPageBtn = document.getElementById('nextPage');
@@ -106,6 +107,7 @@ function displayResults(response) {
     // Handle both old format (array) and new format (object with data and pagination)
     const articles = response.data || response;
     pagination = response.pagination || null;
+    const meta = response.meta || null;
 
     if (!articles || articles.length === 0) {
         showNoResults();
@@ -116,7 +118,7 @@ function displayResults(response) {
     
     // Update pagination info
     if (pagination) {
-        updatePaginationInfo(pagination);
+        updatePaginationInfo(pagination, meta);
         showPaginationControls();
     } else {
         hidePaginationControls();
@@ -270,10 +272,17 @@ function hideAllMessages() {
 }
 
 // Pagination functions
-function updatePaginationInfo(paginationData) {
+function updatePaginationInfo(paginationData, metaData) {
     totalCountSpan.textContent = paginationData.total.toLocaleString();
     currentPageSpan.textContent = paginationData.page;
     totalPagesSpan.textContent = paginationData.totalPages;
+    
+    // Update query time if available
+    if (metaData && metaData.queryTime) {
+        queryTimeSpan.textContent = metaData.queryTime;
+    } else {
+        queryTimeSpan.textContent = '-';
+    }
     
     // Update button states
     if (paginationData.hasPrev) {
