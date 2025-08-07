@@ -4,7 +4,6 @@ const API_BASE_URL = 'http://192.168.1.106:3000';
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
-const showAllButton = document.getElementById('showAllButton');
 const resultsContainer = document.getElementById('resultsContainer');
 const resultsInfo = document.getElementById('resultsInfo');
 const totalCountSpan = document.getElementById('totalCount');
@@ -27,7 +26,6 @@ let pagination = null;
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
     searchButton.addEventListener('click', () => performSearch(1));
-    showAllButton.addEventListener('click', () => showAllApplications(1));
     
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -37,28 +35,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     prevPageBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        if (currentPage > 1) {
-            if (currentQuery) {
-                performSearch(currentPage - 1);
-            } else {
-                showAllApplications(currentPage - 1);
-            }
+        if (currentPage > 1 && currentQuery) {
+            performSearch(currentPage - 1);
         }
     });
     
     nextPageBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        if (pagination && currentPage < pagination.totalPages) {
-            if (currentQuery) {
-                performSearch(currentPage + 1);
-            } else {
-                showAllApplications(currentPage + 1);
-            }
+        if (pagination && currentPage < pagination.totalPages && currentQuery) {
+            performSearch(currentPage + 1);
         }
     });
     
-    // Load all applications on page load
-    showAllApplications(1);
+    // Show initial empty state with instructions
+    showInitialState();
 });
 
 // Main search function
@@ -66,7 +56,7 @@ function performSearch(page = 1) {
     const query = searchInput.value.trim();
     
     if (!query) {
-        showAllApplications(page);
+        showEmptySearch();
         return;
     }
 
@@ -75,12 +65,35 @@ function performSearch(page = 1) {
     searchApplications(query, page);
 }
 
-// Show all applications
-function showAllApplications(page = 1) {
+// Show empty search message
+function showEmptySearch() {
+    hideAllMessages();
+    resultsContainer.innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-search text-muted" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <h4 class="text-muted">Ingrese un término de búsqueda</h4>
+            <p class="text-muted">Escriba el nombre de una marca, modelo o especificación para buscar aplicaciones.</p>
+        </div>
+    `;
+    hidePaginationControls();
+    resultsInfo.style.display = 'none';
+}
+
+// Show initial state
+function showInitialState() {
+    hideAllMessages();
+    resultsContainer.innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-car text-success" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+            <h4 class="text-success">Buscador de Aplicaciones</h4>
+            <p class="text-muted">Utilice el campo de búsqueda para encontrar aplicaciones específicas.</p>
+            <p class="text-muted"><strong>Ejemplos:</strong> "chevrolet", "motor ford", "corsa 1.4"</p>
+        </div>
+    `;
+    hidePaginationControls();
+    resultsInfo.style.display = 'none';
     currentQuery = '';
-    currentPage = page;
-    searchInput.value = '';
-    searchApplications('', page);
+    currentPage = 1;
 }
 
 // Search applications function
@@ -106,7 +119,11 @@ function searchApplications(query, page = 1) {
         .catch(error => {
             hideLoading();
             console.error('Error:', error);
-            showError('Error al conectar con el servidor. Verifique que la API esté ejecutándose en http://192.168.1.106:3000');
+            if (error.message.includes('400')) {
+                showEmptySearch();
+            } else {
+                showError('Error al conectar con el servidor. Verifique que la API esté ejecutándose en http://192.168.1.106:3000');
+            }
         });
 }
 

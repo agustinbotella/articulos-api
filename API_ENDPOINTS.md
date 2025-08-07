@@ -112,17 +112,14 @@ GET /articles?search=gol power bujia
 Returns applications from the APLICACIONES table with optional search functionality.
 
 **Parameters:**
-- `search` (string, optional): Search term - supports word-based search across application paths
+- `search` (string, **required**): Search term - supports word-based search across application paths
 - `page` (integer, optional): Page number (default: 1)
 - `limit` (integer, optional): Results per page (default: 20, max: 20)
 
 **Example Requests:**
 ```bash
-# Get all applications (first page)
-GET /aplicaciones
-
-# Get specific page
-GET /aplicaciones?page=2&limit=20
+# Search is required - no longer supports listing all
+# GET /aplicaciones  # This will return 400 error
 
 # Search for specific applications
 GET /aplicaciones?search=chevrolet

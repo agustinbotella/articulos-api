@@ -34,15 +34,24 @@ app.get('/', (req, res) => {
   res.send('API is working');
 });
 
-// Aplicaciones endpoint - returns all applications with optional search
+// Aplicaciones endpoint - search-only with required search parameter
 app.get('/aplicaciones', (req, res) => {
   const startTime = Date.now();
   const search = req.query.search;
+  
+  // Require search parameter
+  if (!search || search.trim() === '') {
+    return res.status(400).json({
+      error: 'Search parameter is required',
+      message: 'Por favor ingrese un término de búsqueda'
+    });
+  }
+  
   const page = parseInt(req.query.page) || 1;
   const limit = Math.min(parseInt(req.query.limit) || 20, 20); // Max 20 rows, default 20
   const offset = (page - 1) * limit;
   
-  // Create search filter similar to articles endpoint
+  // Create search filter
   let searchFilter = "";
   if (search) {
     const words = search.trim().split(/\s+/)
