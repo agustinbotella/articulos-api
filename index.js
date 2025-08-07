@@ -79,13 +79,13 @@ app.get('/articles/dependencies', (req, res) => {
   Firebird.attach(dbOptions, (err, db) => {
     if (err) return res.status(500).json({ error: 'Database connection failed' });
 
-    const sql = 'SELECT FIRST 3 * FROM ARTLPR';
+    const sql = 'SELECT FIRST 3 * FROM STOCK';
 
     db.query(sql, (err, result) => {
       db.detach();
 
       if (err) {
-        console.error('❌ ARTLPR error:', err.message);
+        console.error('❌ STOCK error:', err.message);
         return res.status(500).json({ error: 'Query failed', details: err.message });
       }
 
@@ -93,6 +93,7 @@ app.get('/articles/dependencies', (req, res) => {
     });
   });
 });
+
 
 
 
