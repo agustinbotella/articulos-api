@@ -6,6 +6,8 @@ const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 const rowsPerPageSelect = document.getElementById('rowsPerPage');
 const stockFilterCheckbox = document.getElementById('stockFilter');
+const applicationInput = document.getElementById('applicationInput');
+const clearApplicationButton = document.getElementById('clearApplicationButton');
 const resultsContainer = document.getElementById('resultsContainer');
 const resultsInfo = document.getElementById('resultsInfo');
 const totalCountSpan = document.getElementById('totalCount');
@@ -28,6 +30,12 @@ let pagination = null;
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Check for URL parameters to prepopulate application filter
+    const urlParams = new URLSearchParams(window.location.search);
+    const appId = urlParams.get('applicationId');
+    if (appId) {
+        applicationInput.value = appId;
+    }
     searchButton.addEventListener('click', () => performSearch(1));
     searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
@@ -43,6 +51,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     stockFilterCheckbox.addEventListener('change', function() {
+        if (currentQuery) {
+            performSearch(1);
+        }
+    });
+    
+    applicationInput.addEventListener('change', function() {
+        if (currentQuery) {
+            performSearch(1);
+        }
+    });
+    
+    clearApplicationButton.addEventListener('click', function() {
+        applicationInput.value = '';
         if (currentQuery) {
             performSearch(1);
         }
@@ -76,12 +97,16 @@ function performSearch(page = 1) {
     currentPage = page;
     currentLimit = parseInt(rowsPerPageSelect.value);
     const onlyWithStock = stockFilterCheckbox.checked;
+    const applicationId = applicationInput.value.trim();
 
     showLoading();
     
     let url = `${API_BASE_URL}/articles?search=${encodeURIComponent(query)}&page=${page}&limit=${currentLimit}`;
     if (onlyWithStock) {
         url += '&onlyWithStock=true';
+    }
+    if (applicationId) {
+        url += `&applicationId=${encodeURIComponent(applicationId)}`;
     }
     
     fetch(url)

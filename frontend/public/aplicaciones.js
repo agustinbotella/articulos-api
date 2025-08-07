@@ -142,6 +142,15 @@ function createApplicationCard(app) {
         notesSection = `<div class="notes-section">${notes.join('')}</div>`;
     }
     
+    // Add action buttons
+    const actionButtons = `
+        <div class="mt-2 text-end">
+            <button class="btn btn-primary btn-sm" onclick="searchArticlesForApplication(${app.id}); event.stopPropagation();">
+                <i class="fas fa-search"></i> Buscar Artículos
+            </button>
+        </div>
+    `;
+    
     return `
         <div class="aplicacion-card card" onclick="selectApplication(${app.id}, '${app.aplicacion.replace(/'/g, "\\'")}')">
             <div class="card-body py-2">
@@ -151,6 +160,7 @@ function createApplicationCard(app) {
                     <span class="aplicacion-id">ID: ${app.id}</span>
                 </div>
                 ${notesSection}
+                ${actionButtons}
             </div>
         </div>
     `;
@@ -174,9 +184,12 @@ function selectApplication(id, aplicacion) {
     
     // For now, just show an alert
     alert(`Aplicación seleccionada:\nID: ${id}\nDescripción: ${aplicacion}`);
-    
-    // Future enhancement: could redirect to articles that use this application
-    // window.location.href = `index.html?aplicacion=${encodeURIComponent(id)}`;
+}
+
+// Search articles for a specific application
+function searchArticlesForApplication(applicationId) {
+    // Redirect to articles page with the application ID prepopulated
+    window.location.href = `articles.html?applicationId=${applicationId}`;
 }
 
 // Update results info

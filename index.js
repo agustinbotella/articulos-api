@@ -178,7 +178,7 @@ app.get('/articles', (req, res) => {
 
   // Main query with pagination
   const sql = `
-    SELECT
+    SELECT DISTINCT
       a.ART_ID,
       a.CALC_DESC_EXTEND,
       a.NOTA,
@@ -189,7 +189,8 @@ app.get('/articles', (req, res) => {
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
-    WHERE ${baseWhere} ${searchFilter} ${stockFilter}
+    ${applicationJoin}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
     ORDER BY a.ART_ID
     ROWS ${offset + 1} TO ${offset + limit}
   `;
@@ -219,7 +220,7 @@ app.get('/articles', (req, res) => {
           const endTime = Date.now();
           const queryTime = endTime - startTime;
           
-          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Stock Filter: ${onlyWithStock} | Results: 0 | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | Results: 0 | Time: ${queryTime}ms`);
           
           return res.json({
             data: [],
@@ -384,7 +385,7 @@ app.get('/articles', (req, res) => {
           const queryTime = endTime - startTime;
           
           // Log performance for monitoring
-          console.log(`🔍 Search: "${search}" | Words: ${words ? words.length : 0} | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words ? words.length : 0} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | Results: ${result.length} | Time: ${queryTime}ms`);
           
           return res.json({
             data: result,
