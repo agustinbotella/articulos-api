@@ -49,7 +49,7 @@ app.get('/aplicaciones', (req, res) => {
     if (words.length > 0) {
       const wordConditions = words.map(word => {
         const cleanWord = word.replace(/'/g, "''").toUpperCase();
-        return `UPPER(APLICACION_PATH) LIKE '%${cleanWord}%'`;
+        return `UPPER(ap.APLICACION_PATH) LIKE '%${cleanWord}%'`;
       });
       
       searchFilter = `WHERE (${wordConditions.join(' AND ')})`;
@@ -57,13 +57,15 @@ app.get('/aplicaciones', (req, res) => {
   }
   
   const sql = `
-    SELECT 
-      APLIC_ID,
-      APLICACION_PATH,
-      NOTA_MEMO
-    FROM APLICACIONES
+    SELECT DISTINCT
+      ap.APLIC_ID,
+      ap.APLICACION_PATH,
+      ap.NOTA_MEMO,
+      aa.NOTA as ART_APLICACION_NOTA
+    FROM APLICACIONES ap
+    LEFT JOIN ART_APLICACION aa ON ap.APLIC_ID = aa.APLIC_ID
     ${searchFilter}
-    ORDER BY APLICACION_PATH
+    ORDER BY ap.APLICACION_PATH
   `;
 
   Firebird.attach(dbOptions, (err, db) => {
@@ -92,7 +94,8 @@ app.get('/aplicaciones', (req, res) => {
       const result = aplicaciones.map(app => ({
         id: app.APLIC_ID,
         aplicacion: safeTrim(app.APLICACION_PATH) || '',
-        nota: safeTrim(app.NOTA_MEMO)
+        nota: safeTrim(app.NOTA_MEMO),
+        artAplicacionNota: safeTrim(app.ART_APLICACION_NOTA)
       }));
 
       db.detach();

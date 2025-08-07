@@ -129,6 +129,19 @@ function createApplicationCard(app) {
     const hierarchyClass = `hierarchy-level-${app.level}`;
     const iconClass = getIconForLevel(app.level);
     
+    // Create notes section
+    let notesSection = '';
+    if (app.nota || app.artAplicacionNota) {
+        const notes = [];
+        if (app.nota) {
+            notes.push(`<div class="note-item"><i class="fas fa-info-circle text-info"></i> <strong>Aplicación:</strong> ${app.nota}</div>`);
+        }
+        if (app.artAplicacionNota) {
+            notes.push(`<div class="note-item"><i class="fas fa-sticky-note text-warning"></i> <strong>Artículo:</strong> ${app.artAplicacionNota}</div>`);
+        }
+        notesSection = `<div class="notes-section">${notes.join('')}</div>`;
+    }
+    
     return `
         <div class="aplicacion-card card" onclick="selectApplication(${app.id}, '${app.aplicacion.replace(/'/g, "\\'")}')">
             <div class="card-body py-2">
@@ -137,7 +150,7 @@ function createApplicationCard(app) {
                     ${app.displayText}
                     <span class="aplicacion-id">ID: ${app.id}</span>
                 </div>
-                ${app.nota ? `<small class="text-muted ms-3"><i class="fas fa-info-circle"></i> ${app.nota}</small>` : ''}
+                ${notesSection}
             </div>
         </div>
     `;
