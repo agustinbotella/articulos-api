@@ -19,13 +19,16 @@ app.get('/', (req, res) => {
 
 // Get first 20 articles
 app.get('/articles', (req, res) => {
+  const search = req.query.search;
+
   Firebird.attach(dbOptions, (err, db) => {
     if (err) {
       console.error('❌ DB Connect Error:', err.message);
       return res.status(500).json({ error: 'Database connection failed' });
     }
 
-    const sql = `
+    // Base SQL
+    let sql = `
       SELECT
         a.ART_ID,
         a.CALC_DESC_EXTEND,
@@ -38,15 +41,24 @@ app.get('/articles', (req, res) => {
         MARCAS m ON a.MARCA_ID = m.MARCA_ID
       LEFT JOIN
         ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
-      ROWS 20
     `;
+
+    // Add search filter if provided
+    if (search) {
+      const searchEscaped = search.replace(/'/g, "''"); // prevent SQL injection
+      sql += `
+        WHERE UPPER(a.CALC_DESC_EXTEND) LIKE '%${searchEscaped.toUpperCase()}%'
+      `;
+    }
+
+    sql += ' ROWS 20';
 
     db.query(sql, (err, result) => {
       db.detach();
 
       if (err) {
         console.error('❌ Query Error:', err.message);
-        return res.status(500).json({ error: 'Query failed' });
+        return res.status(500).json({ error: 'Query failed', details: err.message });
       }
 
       const cleaned = result.map(row => ({
@@ -61,6 +73,7 @@ app.get('/articles', (req, res) => {
     });
   });
 });
+
 
 
 
