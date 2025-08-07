@@ -1,13 +1,10 @@
-const Firebird = require('node-firebird');
+const Firebird = require('node-firebird-dev');
 
 const options = {
-  host: '192.168.1.30',
-  database: '/var/lib/firebird/3.0/data/DBSIF.FDB',
+  host: '', // Leave this empty for remote-style path
+  database: '192.168.1.30:/var/lib/firebird/3.0/data/DBSIF.FDB',
   user: 'LECTURA',
-  password: 'LECTURA',
-  lowercase_keys: false,
-  role: null,
-  pageSize: 4096
+  password: 'LECTURA'
 };
 
 Firebird.attach(options, (err, db) => {
