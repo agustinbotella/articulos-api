@@ -26,6 +26,7 @@ Search for articles with pagination, filtering, and full relationship data.
 - `page` (integer, optional): Page number (default: 1)
 - `limit` (integer, optional): Results per page (default: 20, max: 100)
 - `onlyWithStock` (boolean, optional): Filter only articles with stock (default: false)
+- `applicationId` (integer, optional): Filter articles by specific application ID
 
 **Example Requests:**
 ```bash
@@ -37,6 +38,12 @@ GET /articles?search=bujia&page=2&limit=50
 
 # Search only articles with stock
 GET /articles?search=bujia&onlyWithStock=true
+
+# Filter by specific application
+GET /articles?search=bujia&applicationId=365
+
+# Combined filters
+GET /articles?search=motor&onlyWithStock=true&applicationId=365&limit=50
 
 # Word-based search (order doesn't matter)
 GET /articles?search=gol power bujia
