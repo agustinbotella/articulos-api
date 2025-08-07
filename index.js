@@ -31,9 +31,23 @@ app.get('/articles', (req, res) => {
   const offset = (page - 1) * limit;
   
   const baseWhere = "a.EMP_ID = 2";
-  const searchFilter = search
-    ? `AND UPPER(a.CALC_DESC_EXTEND) LIKE '%${search.replace(/'/g, "''").toUpperCase()}%'`
-    : "";
+  
+  // Create word-based search filter
+  let searchFilter = "";
+  if (search) {
+    // Split search into individual words and filter out empty strings
+    const words = search.trim().split(/\s+/).filter(word => word.length > 0);
+    
+    if (words.length > 0) {
+      // Create a condition for each word (must contain all words, order doesn't matter)
+      const wordConditions = words.map(word => {
+        const cleanWord = word.replace(/'/g, "''").toUpperCase();
+        return `UPPER(a.CALC_DESC_EXTEND) LIKE '%${cleanWord}%'`;
+      });
+      
+      searchFilter = `AND (${wordConditions.join(' AND ')})`;
+    }
+  }
 
   // Count query for total records
   const countSql = `
