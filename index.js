@@ -19,7 +19,7 @@ app.get('/articles', (req, res) => {
       return res.status(500).json({ error: 'Database connection failed' });
     }
 
-    db.query('SELECT FIRST 5 * FROM articulos', (err, result) => {
+    db.query('SELECT FIRST 1 * FROM articulos', (err, result) => {
       db.detach();
 
       if (err) {
