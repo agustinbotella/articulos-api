@@ -34,8 +34,15 @@ Abrir [http://localhost:3001](http://localhost:3001) en tu navegador.
 
 ### Búsqueda
 - Escribir el término de búsqueda en el campo de texto
+- Seleccionar cantidad de resultados por página (20, 50 o 100)
 - Presionar **Enter** o hacer click en el botón de búsqueda
 - Los resultados se mostrarán automáticamente
+
+### Paginación
+- **Navegación**: Botones anterior/siguiente para navegar entre páginas
+- **Información**: Total de artículos encontrados y página actual
+- **Límite**: Máximo 100 resultados por página, máximo 100 páginas
+- **Selector**: Cambio dinámico de resultados por página
 
 ### Información mostrada por artículo:
 - **ID y Descripción** del artículo
@@ -73,32 +80,47 @@ frontend/
 La aplicación consume la siguiente API:
 
 ```
-GET http://localhost:3000/articles?search={query}
+GET http://localhost:3000/articles?search={query}&page={page}&limit={limit}
 ```
+
+### Parámetros:
+- `search`: Término de búsqueda (requerido)
+- `page`: Número de página (opcional, por defecto: 1)
+- `limit`: Resultados por página (opcional, por defecto: 20, máximo: 100)
 
 ### Ejemplo de respuesta:
 ```json
-[
-  {
-    "id": 61085,
-    "descripcion": "Bujía Gol Power",
-    "marca": "BOSCH",
-    "rubro": "Encendido",
-    "nota": "Producto de alta demanda",
-    "precio": 1234.56,
-    "stock": 42,
-    "aplicaciones": [
-      {
-        "aplicacion": "MOTORES > VW > 1.6 8V",
-        "nota": null,
-        "desde": "2018-01-01",
-        "hasta": "2020-01-01"
-      }
-    ],
-    "complementarios": [208, 333],
-    "sustitutos": [102, 305]
+{
+  "data": [
+    {
+      "id": 61085,
+      "descripcion": "Bujía Gol Power",
+      "marca": "BOSCH",
+      "rubro": "Encendido",
+      "nota": "Producto de alta demanda",
+      "precio": 1234.56,
+      "stock": 42,
+      "aplicaciones": [
+        {
+          "aplicacion": "MOTORES > VW > 1.6 8V",
+          "nota": null,
+          "desde": "2018-01-01",
+          "hasta": "2020-01-01"
+        }
+      ],
+      "complementarios": [208, 333],
+      "sustitutos": [102, 305]
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1250,
+    "totalPages": 63,
+    "hasNext": true,
+    "hasPrev": false
   }
-]
+}
 ```
 
 ## 🛟 Resolución de Problemas
