@@ -77,58 +77,23 @@ app.get('/articles', (req, res) => {
 
 app.get('/articles/dependencies', (req, res) => {
   Firebird.attach(dbOptions, (err, db) => {
-    if (err) return res.status(500).json({ error: 'Database connection failed' });
+    if (err) {
+      console.error('❌ DB Connection Error:', err.message);
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
 
-    const results = {};
-    let responded = false;
+    const sql = 'SELECT FIRST 3 * FROM ART_ART';
 
-    const queries = [
-      { key: 'art_aplicacion', sql: 'SELECT FIRST 3 * FROM ART_APLICACION' },
-      { key: 'art_art', sql: 'SELECT FIRST 3 * FROM ART_ART' },
-      { key: 'artlpr', sql: 'SELECT FIRST 3 * FROM ARTLPR' },
-      { key: 'stock', sql: 'SELECT FIRST 3 * FROM STOCK' }
-    ];
+    db.query(sql, (err, result) => {
+      db.detach();
 
-    let pending = queries.length;
-
-    queries.forEach(({ key, sql }) => {
-      try {
-        db.query(sql, (err, data) => {
-          if (err) {
-            console.error(`❌ Error in ${key}:`, err.message);
-            results[key] = { error: err.message };
-          } else {
-            results[key] = data;
-          }
-
-          pending--;
-
-          if (pending === 0 && !responded) {
-            responded = true;
-            db.detach();
-            res.json(results);
-          }
-        });
-      } catch (e) {
-        results[key] = { error: e.message };
-        pending--;
-
-        if (pending === 0 && !responded) {
-          responded = true;
-          db.detach();
-          res.json(results);
-        }
+      if (err) {
+        console.error('❌ ART_ART error:', err.message);
+        return res.status(500).json({ error: 'Query failed', details: err.message });
       }
+
+      res.json(result);
     });
-
-    // Failsafe timeout
-    setTimeout(() => {
-      if (!responded) {
-        responded = true;
-        db.detach();
-        res.status(504).json({ error: 'Timeout occurred', partial: results });
-      }
-    }, 10000); // 10s max
   });
 });
 
