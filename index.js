@@ -41,24 +41,11 @@ app.get('/articles', (req, res) => {
       ROWS 20
     `;
 
-    db.query(sql, (err, result) => {
-      db.detach();
-
-      if (err) {
-        console.error('❌ Query Error:', err.message);
-        return res.status(500).json({ error: 'Query failed' });
-      }
-
-      const cleaned = result.map(row => ({
-        id: row.ART_ID,
-        descripcion: row.CALC_DESC_EXTEND ? row.CALC_DESC_EXTEND.trim() : '',
-        marca: row.MARCA ? row.MARCA.trim() : null,
-        rubro: row.RUBRO_NOMBRE ? row.RUBRO_NOMBRE.trim() : null,
-        nota: row.NOTA ? row.NOTA.trim() : null
-      }));
-
-      res.json(cleaned);
+    db.query('SELECT FIRST 1 * FROM ARTRUBROS', (err, result) => {
+      console.log(result);
+      res.json(result);
     });
+    
   });
 });
 
