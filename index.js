@@ -25,12 +25,38 @@ app.get('/articles', (req, res) => {
       return res.status(500).json({ error: 'Database connection failed' });
     }
 
-    db.query('SELECT FIRST 1 * FROM MARCAS', (err, result) => {
-      console.log(result);
-      res.json(result);
+    const sql = `
+      SELECT
+        a.ART_ID,
+        a.CALC_DESC_EXTEND,
+        m.MARCA
+      FROM
+        ARTICULOS a
+      LEFT JOIN
+        MARCAS m ON a.MARCA_ID = m.MARCA_ID
+      ROWS 20
+    `;
+
+    db.query(sql, (err, result) => {
+      db.detach();
+
+      if (err) {
+        console.error('❌ Query Error:', err.message);
+        return res.status(500).json({ error: 'Query failed' });
+      }
+
+      // Clean and format result
+      const cleaned = result.map(row => ({
+        id: row.ART_ID,
+        descripcion: row.CALC_DESC_EXTEND ? row.CALC_DESC_EXTEND.trim() : '',
+        marca: row.MARCA ? row.MARCA.trim() : null
+      }));
+
+      res.json(cleaned);
     });
   });
 });
+
 
 // Get foreign key relations of "articulos"
 app.get('/articles/relations', (req, res) => {
