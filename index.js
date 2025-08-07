@@ -24,6 +24,11 @@ const dbOptions = {
 // 2. Computed column for uppercase search: ALTER TABLE ARTICULOS ADD CALC_DESC_UPPER COMPUTED BY (UPPER(CALC_DESC_EXTEND));
 // 3. Index on computed column: CREATE INDEX IDX_ARTICULOS_DESC_UPPER ON ARTICULOS (CALC_DESC_UPPER);
 
+// Utility function to safely trim database strings
+function safeTrim(value) {
+  return value && typeof value === 'string' ? value.trim() : null;
+}
+
 // Basic test endpoint
 app.get('/', (req, res) => {
   res.send('API is working');
@@ -171,8 +176,8 @@ app.get('/articles', (req, res) => {
             const aplicaciones = responses.aplicaciones
               .filter(ap => ap.ART_ID === id)
               .map(ap => ({
-                aplicacion: ap.APLICACION_PATH ? ap.APLICACION_PATH.trim() : null,
-                nota: ap.NOTA ? ap.NOTA.trim() : null,
+                aplicacion: safeTrim(ap.APLICACION_PATH),
+                nota: safeTrim(ap.NOTA),
                 desde: ap.DESDE,
                 hasta: ap.HASTA
               }));
@@ -193,10 +198,10 @@ app.get('/articles', (req, res) => {
 
             return {
               id,
-              descripcion: a.CALC_DESC_EXTEND ? a.CALC_DESC_EXTEND.trim() : '',
-              marca: a.MARCA ? a.MARCA.trim() : null,
-              rubro: a.RUBRO_NOMBRE ? a.RUBRO_NOMBRE.trim() : null,
-              nota: a.NOTA ? a.NOTA.trim() : null,
+              descripcion: safeTrim(a.CALC_DESC_EXTEND) || '',
+              marca: safeTrim(a.MARCA),
+              rubro: safeTrim(a.RUBRO_NOMBRE),
+              nota: safeTrim(a.NOTA),
               aplicaciones,
               precio,
               stock,
