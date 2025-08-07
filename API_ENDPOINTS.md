@@ -133,19 +133,22 @@ GET /aplicaciones?search=corsa 1.4
       "id": 1,
       "aplicacion": "MOTORES > CHEVROLET > 1.4 8V",
       "nota": "Para motores a nafta",
-      "artAplicacionNota": "Verificar compatibilidad con turbo"
+      "artAplicacionNota": "Verificar compatibilidad con turbo",
+      "articleCount": 25
     },
     {
       "id": 2,
       "aplicacion": "MOTORES > FORD > 1.6 16V",
       "nota": null,
-      "artAplicacionNota": "Solo para versiones 2010+"
+      "artAplicacionNota": "Solo para versiones 2010+",
+      "articleCount": 12
     },
     {
       "id": 3,
       "aplicacion": "MOTORES > VW > 1.6 8V",
       "nota": "Compatible con todas las versiones",
-      "artAplicacionNota": null
+      "artAplicacionNota": null,
+      "articleCount": 0
     }
   ],
   "meta": {
@@ -160,6 +163,7 @@ GET /aplicaciones?search=corsa 1.4
 - `aplicacion`: Application path/description (APLICACION_PATH)
 - `nota`: Application notes (NOTA_MEMO from APLICACIONES table)
 - `artAplicacionNota`: Article application notes (NOTA from ART_APLICACION table)
+- `articleCount`: Number of articles that use this application
 
 ---
 
