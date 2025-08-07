@@ -5,11 +5,9 @@ const options = {
   database: '/var/lib/firebird/3.0/data/DBSIF.FDB',
   user: 'LECTURA',
   password: 'LECTURA',
-  port: 3050,
   lowercase_keys: false,
   role: null,
-  pageSize: 4096,
-  retryConnectionInterval: 1000
+  pageSize: 4096
 };
 
 Firebird.attach(options, (err, db) => {
