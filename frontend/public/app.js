@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://192.168.1.106:3000';
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
@@ -98,7 +98,7 @@ function performSearch(page = 1) {
         .catch(error => {
             hideLoading();
             console.error('Error:', error);
-            showError('Error al conectar con el servidor. Verifique que la API esté ejecutándose en http://localhost:3000');
+            showError('Error al conectar con el servidor. Verifique que la API esté ejecutándose en http://192.168.1.106:3000');
         });
 }
 

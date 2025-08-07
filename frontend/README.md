@@ -13,7 +13,7 @@ Una aplicación frontend simple y moderna para buscar artículos usando la API d
 ## 📋 Requisitos
 
 - Node.js 12 o superior
-- API de artículos ejecutándose en `http://localhost:3000`
+- API de artículos ejecutándose en `http://192.168.1.106:3000`
 
 ## 🔧 Instalación y Uso
 
@@ -29,6 +29,8 @@ npm start
 
 ### 3. Abrir en el navegador
 Abrir [http://localhost:3001](http://localhost:3001) en tu navegador.
+
+**Nota**: El frontend se conectará automáticamente a la API en `http://192.168.1.106:3000`
 
 ## 🎯 Funcionalidades
 
@@ -82,7 +84,7 @@ frontend/
 La aplicación consume la siguiente API:
 
 ```
-GET http://localhost:3000/articles?search={query}&page={page}&limit={limit}&onlyWithStock={boolean}
+GET http://192.168.1.106:3000/articles?search={query}&page={page}&limit={limit}&onlyWithStock={boolean}
 ```
 
 ### Parámetros:
@@ -149,12 +151,12 @@ GET http://localhost:3000/articles?search={query}&page={page}&limit={limit}&only
 - Verificar que el puerto 3001 esté disponible
 
 ### No se muestran resultados
-- Verificar que la API esté ejecutándose en `http://localhost:3000`
-- Probar la API directamente: `curl "http://localhost:3000/articles?search=test"`
+- Verificar que la API esté ejecutándose en `http://192.168.1.106:3000`
+- Probar la API directamente: `curl "http://192.168.1.106:3000/articles?search=test"`
 - Verificar la consola del navegador para errores de CORS
 
 ### Error de CORS
-La API debe permitir requests desde `http://localhost:3001`. Agregar middleware de CORS si es necesario:
+La API debe permitir requests desde el frontend. Agregar middleware de CORS si es necesario:
 
 ```javascript
 // En la API (index.js)
