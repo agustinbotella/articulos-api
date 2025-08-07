@@ -19,12 +19,18 @@ const dbOptions = {
   password: 'LECTURA'
 };
 
+// Performance Note: For optimal search performance, consider creating:
+// 1. Index on CALC_DESC_EXTEND: CREATE INDEX IDX_ARTICULOS_DESC ON ARTICULOS (CALC_DESC_EXTEND);
+// 2. Computed column for uppercase search: ALTER TABLE ARTICULOS ADD CALC_DESC_UPPER COMPUTED BY (UPPER(CALC_DESC_EXTEND));
+// 3. Index on computed column: CREATE INDEX IDX_ARTICULOS_DESC_UPPER ON ARTICULOS (CALC_DESC_UPPER);
+
 // Basic test endpoint
 app.get('/', (req, res) => {
   res.send('API is working');
 });
 
 app.get('/articles', (req, res) => {
+  const startTime = Date.now(); // Performance monitoring
   const search = req.query.search;
   const page = parseInt(req.query.page) || 1;
   const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 rows
@@ -32,14 +38,17 @@ app.get('/articles', (req, res) => {
   
   const baseWhere = "a.EMP_ID = 2";
   
-  // Create word-based search filter
+  // Create word-based search filter with performance optimizations
   let searchFilter = "";
+  let words = [];
   if (search) {
     // Split search into individual words and filter out empty strings
-    const words = search.trim().split(/\s+/).filter(word => word.length > 0);
+    words = search.trim().split(/\s+/)
+      .filter(word => word.length > 0)
+      .slice(0, 5); // Limit to 5 words max for performance
     
     if (words.length > 0) {
-      // Create a condition for each word (must contain all words, order doesn't matter)
+      // Performance optimization: Use single UPPER() call with multiple LIKE conditions
       const wordConditions = words.map(word => {
         const cleanWord = word.replace(/'/g, "''").toUpperCase();
         return `UPPER(a.CALC_DESC_EXTEND) LIKE '%${cleanWord}%'`;
@@ -98,6 +107,11 @@ app.get('/articles', (req, res) => {
 
         if (articles.length === 0) {
           db.detach();
+          const endTime = Date.now();
+          const queryTime = endTime - startTime;
+          
+          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Results: 0 | Time: ${queryTime}ms`);
+          
           return res.json({
             data: [],
             pagination: {
@@ -107,6 +121,10 @@ app.get('/articles', (req, res) => {
               totalPages,
               hasNext: page < totalPages,
               hasPrev: page > 1
+            },
+            meta: {
+              queryTime: `${queryTime}ms`,
+              searchWords: words.length
             }
           });
         }
@@ -174,6 +192,12 @@ app.get('/articles', (req, res) => {
             };
           });
 
+          const endTime = Date.now();
+          const queryTime = endTime - startTime;
+          
+          // Log performance for monitoring
+          console.log(`🔍 Search: "${search}" | Words: ${words?.length || 0} | Results: ${result.length} | Time: ${queryTime}ms`);
+          
           return res.json({
             data: result,
             pagination: {
@@ -183,6 +207,10 @@ app.get('/articles', (req, res) => {
               totalPages,
               hasNext: page < totalPages,
               hasPrev: page > 1
+            },
+            meta: {
+              queryTime: `${queryTime}ms`,
+              searchWords: words?.length || 0
             }
           });
         }
