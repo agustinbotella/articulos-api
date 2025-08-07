@@ -104,7 +104,7 @@ app.get('/aplicaciones', (req, res) => {
         });
       }
 
-      const totalCount = countResult[0]?.TOTAL_COUNT || 0;
+      const totalCount = countResult[0] ? countResult[0].TOTAL_COUNT : 0;
       const totalPages = Math.ceil(totalCount / limit);
 
       // If no results, return early
