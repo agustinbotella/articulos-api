@@ -48,6 +48,11 @@ app.get('/articles', (req, res) => {
         return res.status(500).json({ error: 'Query failed', details: err.message });
       }
 
+      if (articles.length === 0) {
+        db.detach();
+        return res.json([]);
+      }
+
       const ids = articles.map(a => a.ART_ID).join(',');
 
       const queries = {
@@ -65,56 +70,65 @@ app.get('/articles', (req, res) => {
       };
 
       const responses = {};
-      let pending = Object.keys(queries).length;
+      const keys = Object.keys(queries);
 
-      Object.entries(queries).forEach(([key, q]) => {
-        db.query(q, (err, rows) => {
+      const runSequentially = (i = 0) => {
+        if (i >= keys.length) {
+          db.detach();
+
+          const result = articles.map(a => {
+            const id = a.ART_ID;
+
+            const aplicaciones = responses.aplicaciones
+              .filter(ap => ap.ART_ID === id)
+              .map(ap => ({
+                aplicacion: ap.APLICACION_PATH ? ap.APLICACION_PATH.trim() : null,
+                nota: ap.NOTA ? ap.NOTA.trim() : null,
+                desde: ap.DESDE,
+                hasta: ap.HASTA
+              }));
+
+            const precioItem = responses.precios.find(p => p.ART_ID === id);
+            const precio = precioItem ? precioItem.PR_FINAL : null;
+
+            const stockItem = responses.stock.find(s => s.ART_ID === id);
+            const stock = stockItem ? stockItem.EXISTENCIA : null;
+
+            const complementarios = responses.rels
+              .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 2)
+              .map(r => r.ART_REL_ID);
+
+            const sustitutos = responses.rels
+              .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 1)
+              .map(r => r.ART_REL_ID);
+
+            return {
+              id,
+              descripcion: a.CALC_DESC_EXTEND ? a.CALC_DESC_EXTEND.trim() : '',
+              marca: a.MARCA ? a.MARCA.trim() : null,
+              rubro: a.RUBRO_NOMBRE ? a.RUBRO_NOMBRE.trim() : null,
+              nota: a.NOTA ? a.NOTA.trim() : null,
+              aplicaciones,
+              precio,
+              stock,
+              complementarios,
+              sustitutos
+            };
+          });
+
+          return res.json(result);
+        }
+
+        const key = keys[i];
+        const query = queries[key];
+
+        db.query(query, (err, rows) => {
           responses[key] = !err ? rows : [];
-          if (--pending === 0) {
-            db.detach();
-            const result = articles.map(a => {
-              const id = a.ART_ID;
-
-              const aplicaciones = responses.aplicaciones
-                .filter(ap => ap.ART_ID === id)
-                .map(ap => ({
-                  aplicacion: ap.APLICACION_PATH ? ap.APLICACION_PATH.trim() : null,
-                  nota: ap.NOTA ? ap.NOTA.trim() : null,
-                  desde: ap.DESDE,
-                  hasta: ap.HASTA
-                }));
-
-              const precioItem = responses.precios.find(p => p.ART_ID === id);
-              const precio = precioItem ? precioItem.PR_FINAL : null;
-              const stockItem = responses.stock.find(s => s.ART_ID === id);
-              const stock = stockItem ? stockItem.EXISTENCIA : null;
-
-              const complementarios = responses.rels
-                .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 2)
-                .map(r => r.ART_REL_ID);
-
-              const sustitutos = responses.rels
-                .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 1)
-                .map(r => r.ART_REL_ID);
-
-              return {
-                id: id,
-                descripcion: a.CALC_DESC_EXTEND ? a.CALC_DESC_EXTEND.trim() : '',
-                marca: a.MARCA ? a.MARCA.trim() : null,
-                rubro: a.RUBRO_NOMBRE ? a.RUBRO_NOMBRE.trim() : null,
-                nota: a.NOTA ? a.NOTA.trim() : null,
-                aplicaciones,
-                precio,
-                stock,
-                complementarios,
-                sustitutos
-              };
-            });
-
-            res.json(result);
-          }
+          runSequentially(i + 1);
         });
-      });
+      };
+
+      runSequentially();
     });
   });
 });
