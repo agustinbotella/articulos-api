@@ -79,20 +79,59 @@ app.get('/articles/dependencies', (req, res) => {
   Firebird.attach(dbOptions, (err, db) => {
     if (err) return res.status(500).json({ error: 'Database connection failed' });
 
-    const sql = 'SELECT FIRST 3 * FROM ART_APLICACION';
+    const results = {};
+    let responded = false;
 
-    db.query(sql, (err, result) => {
-      db.detach();
+    const queries = [
+      { key: 'art_aplicacion', sql: 'SELECT FIRST 3 * FROM ART_APLICACION' },
+      { key: 'art_art', sql: 'SELECT FIRST 3 * FROM ART_ART' },
+      { key: 'artlpr', sql: 'SELECT FIRST 3 * FROM ARTLPR' },
+      { key: 'stock', sql: 'SELECT FIRST 3 * FROM STOCK' }
+    ];
 
-      if (err) {
-        console.error('❌ ART_APLICACION error:', err.message);
-        return res.status(500).json({ error: 'Query failed', details: err.message });
+    let pending = queries.length;
+
+    queries.forEach(({ key, sql }) => {
+      try {
+        db.query(sql, (err, data) => {
+          if (err) {
+            console.error(`❌ Error in ${key}:`, err.message);
+            results[key] = { error: err.message };
+          } else {
+            results[key] = data;
+          }
+
+          pending--;
+
+          if (pending === 0 && !responded) {
+            responded = true;
+            db.detach();
+            res.json(results);
+          }
+        });
+      } catch (e) {
+        results[key] = { error: e.message };
+        pending--;
+
+        if (pending === 0 && !responded) {
+          responded = true;
+          db.detach();
+          res.json(results);
+        }
       }
-
-      res.json(result);
     });
+
+    // Failsafe timeout
+    setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        db.detach();
+        res.status(504).json({ error: 'Timeout occurred', partial: results });
+      }
+    }, 10000); // 10s max
   });
 });
+
 
 
 
