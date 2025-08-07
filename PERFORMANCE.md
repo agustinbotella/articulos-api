@@ -196,6 +196,7 @@ done
 - **No fuzzy matching:** Typos won't find results
 - **No search ranking:** Results not ordered by relevance
 - **Memory usage:** Large result sets consume server memory
+- **Node.js compatibility:** Requires Node.js 12+ (optional chaining removed for compatibility)
 
 ## 📝 Recommendations by Dataset Size
 

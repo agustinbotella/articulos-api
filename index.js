@@ -209,7 +209,7 @@ app.get('/articles', (req, res) => {
           const queryTime = endTime - startTime;
           
           // Log performance for monitoring
-          console.log(`🔍 Search: "${search}" | Words: ${words?.length || 0} | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words ? words.length : 0} | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
           
           return res.json({
             data: result,
@@ -223,7 +223,7 @@ app.get('/articles', (req, res) => {
             },
             meta: {
               queryTime: `${queryTime}ms`,
-              searchWords: words?.length || 0
+              searchWords: words ? words.length : 0
             }
           });
         }
