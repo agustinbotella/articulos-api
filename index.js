@@ -168,9 +168,60 @@ app.get('/articles', (req, res) => {
 
       const runSequentially = (i = 0) => {
         if (i >= keys.length) {
-          db.detach();
+          // Collect all related article IDs
+          const allRelatedIds = new Set();
+          responses.rels.forEach(rel => {
+            allRelatedIds.add(rel.ART_REL_ID);
+          });
+          
+          if (allRelatedIds.size === 0) {
+            // No related articles, proceed with normal processing
+            processResults();
+            return;
+          }
+          
+          // Fetch details for related articles
+          const relatedIdsArray = Array.from(allRelatedIds);
+          const relatedIdsString = relatedIdsArray.join(',');
+          
+          const relatedArticlesQuery = `
+            SELECT 
+              a.ART_ID,
+              a.CALC_DESC_EXTEND,
+              m.MARCA,
+              lp.PR_FINAL as PRECIO,
+              s.EXISTENCIA as STOCK
+            FROM ARTICULOS a
+            LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
+            LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
+            LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12
+            WHERE a.ART_ID IN (${relatedIdsString})
+          `;
+          
+          db.query(relatedArticlesQuery, (err, relatedArticles) => {
+            if (!err && relatedArticles) {
+              responses.relatedArticles = relatedArticles;
+            } else {
+              responses.relatedArticles = [];
+            }
+            processResults();
+          });
+          return;
+        }
+        
+        const key = keys[i];
+        const query = queries[key];
 
-          const result = articles.map(a => {
+        db.query(query, (err, rows) => {
+          responses[key] = !err ? rows : [];
+          runSequentially(i + 1);
+        });
+      };
+      
+      function processResults() {
+        db.detach();
+
+        const result = articles.map(a => {
             const id = a.ART_ID;
 
             const aplicaciones = responses.aplicaciones
@@ -188,13 +239,41 @@ app.get('/articles', (req, res) => {
             const stockItem = responses.stock.find(s => s.ART_ID === id);
             const stock = stockItem ? stockItem.EXISTENCIA : null;
 
+            // Process complementarios with full article details
             const complementarios = responses.rels
               .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 2)
-              .map(r => r.ART_REL_ID);
+              .map(r => {
+                const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
+                if (relatedArticle) {
+                  return {
+                    id: relatedArticle.ART_ID,
+                    descripcion: safeTrim(relatedArticle.CALC_DESC_EXTEND) || '',
+                    marca: safeTrim(relatedArticle.MARCA),
+                    precio: relatedArticle.PRECIO,
+                    stock: relatedArticle.STOCK
+                  };
+                }
+                // Fallback to just ID if details not found
+                return { id: r.ART_REL_ID };
+              });
 
+            // Process sustitutos with full article details  
             const sustitutos = responses.rels
               .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 1)
-              .map(r => r.ART_REL_ID);
+              .map(r => {
+                const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
+                if (relatedArticle) {
+                  return {
+                    id: relatedArticle.ART_ID,
+                    descripcion: safeTrim(relatedArticle.CALC_DESC_EXTEND) || '',
+                    marca: safeTrim(relatedArticle.MARCA),
+                    precio: relatedArticle.PRECIO,
+                    stock: relatedArticle.STOCK
+                  };
+                }
+                // Fallback to just ID if details not found
+                return { id: r.ART_REL_ID };
+              });
 
             return {
               id,
@@ -232,15 +311,6 @@ app.get('/articles', (req, res) => {
             }
           });
         }
-
-        const key = keys[i];
-        const query = queries[key];
-
-        db.query(query, (err, rows) => {
-          responses[key] = !err ? rows : [];
-          runSequentially(i + 1);
-        });
-      };
 
       runSequentially();
       });

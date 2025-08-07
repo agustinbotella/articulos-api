@@ -53,7 +53,7 @@ Abrir [http://localhost:3001](http://localhost:3001) en tu navegador.
 - **Precio** formateado en pesos argentinos
 - **Stock** (resaltado en rojo si es 0 o negativo)
 - **Aplicaciones** (sección colapsable con detalles)
-- **Complementarios y Sustitutos** (como badges numerados)
+- **Complementarios y Sustitutos** (secciones colapsables con información completa del artículo)
 
 ## 🛠️ Estructura del Proyecto
 
@@ -111,8 +111,24 @@ GET http://localhost:3000/articles?search={query}&page={page}&limit={limit}&only
           "hasta": "2020-01-01"
         }
       ],
-      "complementarios": [208, 333],
-      "sustitutos": [102, 305]
+          "complementarios": [
+      {
+        "id": 208,
+        "descripcion": "Filtro de Aceite",
+        "marca": "MANN",
+        "precio": 890.50,
+        "stock": 15
+      }
+    ],
+    "sustitutos": [
+      {
+        "id": 102,
+        "descripcion": "Bujía Gol Power Alternativa",
+        "marca": "NGK",
+        "precio": 1100.00,
+        "stock": 8
+      }
+    ]
     }
   ],
   "pagination": {
