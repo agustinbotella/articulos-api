@@ -113,15 +113,20 @@ Returns applications from the APLICACIONES table with optional search functional
 
 **Parameters:**
 - `search` (string, optional): Search term - supports word-based search across application paths
+- `page` (integer, optional): Page number (default: 1)
+- `limit` (integer, optional): Results per page (default: 20, max: 20)
 
 **Example Requests:**
 ```bash
-# Get all applications
+# Get all applications (first page)
 GET /aplicaciones
+
+# Get specific page
+GET /aplicaciones?page=2&limit=20
 
 # Search for specific applications
 GET /aplicaciones?search=chevrolet
-GET /aplicaciones?search=motor ford
+GET /aplicaciones?search=motor ford&page=1&limit=20
 GET /aplicaciones?search=corsa 1.4
 ```
 
@@ -151,9 +156,16 @@ GET /aplicaciones?search=corsa 1.4
       "articleCount": 0
     }
   ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 1,
+    "totalCount": 3,
+    "limit": 20,
+    "hasNextPage": false,
+    "hasPreviousPage": false
+  },
   "meta": {
-    "total": 3,
-    "queryTime": "15ms"
+    "queryTime": 15
   }
 }
 ```
