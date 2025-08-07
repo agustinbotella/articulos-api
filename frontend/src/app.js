@@ -5,6 +5,7 @@ const API_BASE_URL = 'http://localhost:3000';
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 const rowsPerPageSelect = document.getElementById('rowsPerPage');
+const stockFilterCheckbox = document.getElementById('stockFilter');
 const resultsContainer = document.getElementById('resultsContainer');
 const resultsInfo = document.getElementById('resultsInfo');
 const totalCountSpan = document.getElementById('totalCount');
@@ -40,6 +41,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    stockFilterCheckbox.addEventListener('change', function() {
+        if (currentQuery) {
+            performSearch(1);
+        }
+    });
+    
     prevPageBtn.addEventListener('click', function(e) {
         e.preventDefault();
         if (pagination && pagination.hasPrev) {
@@ -67,10 +74,14 @@ function performSearch(page = 1) {
     currentQuery = query;
     currentPage = page;
     currentLimit = parseInt(rowsPerPageSelect.value);
+    const onlyWithStock = stockFilterCheckbox.checked;
 
     showLoading();
     
-    const url = `${API_BASE_URL}/articles?search=${encodeURIComponent(query)}&page=${page}&limit=${currentLimit}`;
+    let url = `${API_BASE_URL}/articles?search=${encodeURIComponent(query)}&page=${page}&limit=${currentLimit}`;
+    if (onlyWithStock) {
+        url += '&onlyWithStock=true';
+    }
     
     fetch(url)
         .then(response => {

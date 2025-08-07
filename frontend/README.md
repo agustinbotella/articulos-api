@@ -35,6 +35,7 @@ Abrir [http://localhost:3001](http://localhost:3001) en tu navegador.
 ### Búsqueda
 - Escribir el término de búsqueda en el campo de texto
 - Seleccionar cantidad de resultados por página (20, 50 o 100)
+- **Filtro de stock**: Marcar "Solo con stock" para mostrar únicamente artículos disponibles
 - Presionar **Enter** o hacer click en el botón de búsqueda
 - Los resultados se mostrarán automáticamente
 
@@ -80,13 +81,14 @@ frontend/
 La aplicación consume la siguiente API:
 
 ```
-GET http://localhost:3000/articles?search={query}&page={page}&limit={limit}
+GET http://localhost:3000/articles?search={query}&page={page}&limit={limit}&onlyWithStock={boolean}
 ```
 
 ### Parámetros:
 - `search`: Término de búsqueda (requerido)
 - `page`: Número de página (opcional, por defecto: 1)
 - `limit`: Resultados por página (opcional, por defecto: 20, máximo: 100)
+- `onlyWithStock`: Filtrar solo artículos con stock (opcional, por defecto: false)
 
 ### Ejemplo de respuesta:
 ```json

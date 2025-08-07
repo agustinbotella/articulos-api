@@ -35,6 +35,7 @@ app.get('/articles', (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 rows
   const offset = (page - 1) * limit;
+  const onlyWithStock = req.query.onlyWithStock === 'true'; // Stock filter
   
   const baseWhere = "a.EMP_ID = 2";
   
@@ -58,6 +59,16 @@ app.get('/articles', (req, res) => {
     }
   }
 
+  // Add stock filter to WHERE clause if needed
+  const stockFilter = onlyWithStock 
+    ? "AND s.EXISTENCIA > 0" 
+    : "";
+  
+  // Determine if we need to join STOCK table
+  const stockJoin = onlyWithStock 
+    ? "LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12" 
+    : "";
+
   // Count query for total records
   const countSql = `
     SELECT COUNT(*) as TOTAL_COUNT
@@ -65,7 +76,8 @@ app.get('/articles', (req, res) => {
       ARTICULOS a
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
-    WHERE ${baseWhere} ${searchFilter}
+    ${stockJoin}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter}
   `;
 
   // Main query with pagination
@@ -80,7 +92,8 @@ app.get('/articles', (req, res) => {
       ARTICULOS a
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
-    WHERE ${baseWhere} ${searchFilter}
+    ${stockJoin}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter}
     ORDER BY a.ART_ID
     ROWS ${offset + 1} TO ${offset + limit}
   `;
@@ -110,7 +123,7 @@ app.get('/articles', (req, res) => {
           const endTime = Date.now();
           const queryTime = endTime - startTime;
           
-          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Results: 0 | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Stock Filter: ${onlyWithStock} | Results: 0 | Time: ${queryTime}ms`);
           
           return res.json({
             data: [],
@@ -196,7 +209,7 @@ app.get('/articles', (req, res) => {
           const queryTime = endTime - startTime;
           
           // Log performance for monitoring
-          console.log(`🔍 Search: "${search}" | Words: ${words?.length || 0} | Results: ${result.length} | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words?.length || 0} | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
           
           return res.json({
             data: result,
