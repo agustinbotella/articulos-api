@@ -78,7 +78,7 @@ app.get('/articles', (req, res) => {
               const aplicaciones = responses.aplicaciones
                 .filter(ap => ap.ART_ID === id)
                 .map(ap => ({
-                  aplicacion: ap.APLICACION_PATH?.trim(),
+                  aplicacion: ap.APLICACION_PATH ? ap.APLICACION_PATH.trim() : null,
                   nota: ap.NOTA?.trim(),
                   desde: ap.DESDE,
                   hasta: ap.HASTA
