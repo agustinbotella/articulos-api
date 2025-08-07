@@ -80,28 +80,46 @@ app.get('/articles/dependencies', (req, res) => {
     if (err) return res.status(500).json({ error: 'Database connection failed' });
 
     const queries = {
-      art_aplicacion: 'SELECT FIRST 3 * FROM ART_APLICACION',
-      art_art: 'SELECT FIRST 3 * FROM ART_ART',
-      artlpr: 'SELECT FIRST 3 * FROM ARTLPR',
-      stock: 'SELECT FIRST 3 * FROM STOCK'
+      art_aplicacion: 'SELECT FIRST 1 * FROM ART_APLICACION',
+      art_art: 'SELECT FIRST 1 * FROM ART_ART',
+      artlpr: 'SELECT FIRST 1 * FROM ARTLPR',
+      stock: 'SELECT FIRST 1 * FROM STOCK'
     };
 
     const results = {};
     let remaining = Object.keys(queries).length;
+    let responded = false;
 
     Object.entries(queries).forEach(([key, sql]) => {
-      db.query(sql, (err, data) => {
-        if (err) results[key] = { error: err.message };
-        else results[key] = data;
+      try {
+        db.query(sql, (err, data) => {
+          if (err) results[key] = { error: err.message };
+          else results[key] = data;
 
-        if (--remaining === 0) {
-          db.detach();
-          res.json(results);
-        }
-      });
+          remaining--;
+          if (remaining === 0 && !responded) {
+            responded = true;
+            db.detach();
+            res.json(results);
+          }
+        });
+      } catch (e) {
+        results[key] = { error: e.message };
+        remaining--;
+      }
     });
+
+    // Failsafe in case something hangs
+    setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        db.detach();
+        res.status(504).json({ error: 'Timeout. Some queries took too long.', partial: results });
+      }
+    }, 10000); // 10 seconds max
   });
 });
+
 
 
 
