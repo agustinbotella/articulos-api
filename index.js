@@ -12,6 +12,33 @@ const dbOptions = {
   password: 'LECTURA'
 };
 
+// Basic test endpoint
+app.get('/', (req, res) => {
+  res.send('API is working');
+});
+
+// Get first 20 articles
+app.get('/articles', (req, res) => {
+  Firebird.attach(dbOptions, (err, db) => {
+    if (err) {
+      console.error('❌ DB Connect Error:', err.message);
+      return res.status(500).json({ error: 'Database connection failed' });
+    }
+
+    db.query('SELECT FIRST 20 * FROM articulos', (err, result) => {
+      db.detach();
+
+      if (err) {
+        console.error('❌ Query Error:', err.message);
+        return res.status(500).json({ error: 'Query failed' });
+      }
+
+      res.json(result);
+    });
+  });
+});
+
+// Get foreign key relations of "articulos"
 app.get('/articles/relations', (req, res) => {
   Firebird.attach(dbOptions, (err, db) => {
     if (err) {
@@ -20,11 +47,11 @@ app.get('/articles/relations', (req, res) => {
 
     const sql = `
       SELECT
-        rc.RDB$CONSTRAINT_NAME AS constraint_name,
-        rc.RDB$RELATION_NAME AS table_name,
-        rfc.RDB$FIELD_NAME AS field_name,
-        i.RDB$RELATION_NAME AS referenced_table,
-        s.RDB$FIELD_NAME AS referenced_column
+        rc.RDB$CONSTRAINT_NAME AS CONSTRAINT_NAME,
+        rc.RDB$RELATION_NAME AS TABLE_NAME,
+        rfc.RDB$FIELD_NAME AS FIELD_NAME,
+        i.RDB$RELATION_NAME AS REFERENCED_TABLE,
+        s.RDB$FIELD_NAME AS REFERENCED_COLUMN
       FROM
         RDB$RELATION_CONSTRAINTS rc
         JOIN RDB$REF_CONSTRAINTS ref ON rc.RDB$CONSTRAINT_NAME = ref.RDB$CONSTRAINT_NAME
@@ -43,36 +70,16 @@ app.get('/articles/relations', (req, res) => {
         return res.status(500).json({ error: 'Query error', details: err.message });
       }
 
-      // Trim padded CHAR fields
+      // Trim CHAR fields (Firebird pads with spaces)
       const cleaned = result.map(row => ({
-        constraint_name: row.CONSTRAINT_NAME?.trim(),
-        table_name: row.TABLE_NAME?.trim(),
-        field_name: row.FIELD_NAME?.trim(),
-        referenced_table: row.REFERENCED_TABLE?.trim(),
-        referenced_column: row.REFERENCED_COLUMN?.trim()
+        constraint_name: row.CONSTRAINT_NAME ? row.CONSTRAINT_NAME.trim() : null,
+        table_name: row.TABLE_NAME ? row.TABLE_NAME.trim() : null,
+        field_name: row.FIELD_NAME ? row.FIELD_NAME.trim() : null,
+        referenced_table: row.REFERENCED_TABLE ? row.REFERENCED_TABLE.trim() : null,
+        referenced_column: row.REFERENCED_COLUMN ? row.REFERENCED_COLUMN.trim() : null
       }));
 
       res.json(cleaned);
-    });
-  });
-});
-
-app.get('/articles', (req, res) => {
-  Firebird.attach(dbOptions, (err, db) => {
-    if (err) {
-      console.error('❌ DB Connect Error:', err.message);
-      return res.status(500).json({ error: 'Database connection failed' });
-    }
-
-    db.query('SELECT FIRST 1 * FROM articulos', (err, result) => {
-      db.detach();
-
-      if (err) {
-        console.error('❌ Query Error:', err.message);
-        return res.status(500).json({ error: 'Query failed' });
-      }
-
-      res.json(result);
     });
   });
 });
