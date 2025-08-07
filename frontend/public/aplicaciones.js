@@ -142,10 +142,21 @@ function createApplicationCard(app) {
         notesSection = `<div class="notes-section">${notes.join('')}</div>`;
     }
     
-    // Add action buttons
+    // Add article count badge and action buttons
+    const articleCountBadge = `
+        <span class="badge bg-info text-dark ms-2">
+            <i class="fas fa-cog"></i> ${app.articleCount || 0} artículos
+        </span>
+    `;
+    
     const actionButtons = `
-        <div class="mt-2 text-end">
-            <button class="btn btn-primary btn-sm" onclick="searchArticlesForApplication(${app.id}); event.stopPropagation();">
+        <div class="mt-2 d-flex justify-content-between align-items-center">
+            <div>
+                ${app.articleCount > 0 ? `<small class="text-muted"><i class="fas fa-info-circle"></i> ${app.articleCount} artículo(s) disponible(s)</small>` : '<small class="text-muted"><i class="fas fa-exclamation-triangle"></i> Sin artículos</small>'}
+            </div>
+            <button class="btn btn-primary btn-sm ${app.articleCount === 0 ? 'disabled' : ''}" 
+                    onclick="searchArticlesForApplication(${app.id}); event.stopPropagation();"
+                    ${app.articleCount === 0 ? 'title="No hay artículos para esta aplicación"' : ''}>
                 <i class="fas fa-search"></i> Buscar Artículos
             </button>
         </div>
@@ -158,6 +169,7 @@ function createApplicationCard(app) {
                     <i class="${iconClass}"></i>
                     ${app.displayText}
                     <span class="aplicacion-id">ID: ${app.id}</span>
+                    ${articleCountBadge}
                 </div>
                 ${notesSection}
                 ${actionButtons}

@@ -57,14 +57,17 @@ app.get('/aplicaciones', (req, res) => {
   }
   
   const sql = `
-    SELECT DISTINCT
+    SELECT 
       ap.APLIC_ID,
       ap.APLICACION_PATH,
       ap.NOTA_MEMO,
-      aa.NOTA as ART_APLICACION_NOTA
+      aa.NOTA as ART_APLICACION_NOTA,
+      COUNT(DISTINCT aa2.ART_ID) as ARTICLE_COUNT
     FROM APLICACIONES ap
     LEFT JOIN ART_APLICACION aa ON ap.APLIC_ID = aa.APLIC_ID
+    LEFT JOIN ART_APLICACION aa2 ON ap.APLIC_ID = aa2.APLIC_ID
     ${searchFilter}
+    GROUP BY ap.APLIC_ID, ap.APLICACION_PATH, ap.NOTA_MEMO, aa.NOTA
     ORDER BY ap.APLICACION_PATH
   `;
 
@@ -95,7 +98,8 @@ app.get('/aplicaciones', (req, res) => {
         id: app.APLIC_ID,
         aplicacion: safeTrim(app.APLICACION_PATH) || '',
         nota: safeTrim(app.NOTA_MEMO),
-        artAplicacionNota: safeTrim(app.ART_APLICACION_NOTA)
+        artAplicacionNota: safeTrim(app.ART_APLICACION_NOTA),
+        articleCount: app.ARTICLE_COUNT || 0
       }));
 
       db.detach();
@@ -156,7 +160,7 @@ app.get('/articles', (req, res) => {
 
   // Add application filter join if needed
   const applicationJoin = applicationId 
-    ? "LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID" 
+    ? "INNER JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID" 
     : "";
 
   // Add application filter to WHERE clause if needed
