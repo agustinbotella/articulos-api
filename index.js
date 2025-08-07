@@ -17,131 +17,102 @@ app.get('/', (req, res) => {
   res.send('API is working');
 });
 
-// Get first 20 articles
 app.get('/articles', (req, res) => {
   const search = req.query.search;
+  const baseWhere = "a.EMP_ID = 2";
+  const searchFilter = search
+    ? `AND UPPER(a.CALC_DESC_EXTEND) LIKE '%${search.replace(/'/g, "''").toUpperCase()}%'`
+    : "";
+
+  const sql = `
+    SELECT
+      a.ART_ID,
+      a.CALC_DESC_EXTEND,
+      a.NOTA,
+      m.MARCA,
+      r.RUBRO AS RUBRO_NOMBRE
+    FROM
+      ARTICULOS a
+    LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
+    LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
+    WHERE ${baseWhere} ${searchFilter}
+    ROWS 20
+  `;
 
   Firebird.attach(dbOptions, (err, db) => {
-    if (err) {
-      console.error('❌ DB Connect Error:', err.message);
-      return res.status(500).json({ error: 'Database connection failed' });
-    }
+    if (err) return res.status(500).json({ error: 'DB connection failed' });
 
-    // Base SQL
-    let sql = `
-      SELECT
-        a.ART_ID,
-        a.CALC_DESC_EXTEND,
-        a.NOTA,
-        m.MARCA,
-        r.RUBRO AS RUBRO_NOMBRE
-      FROM
-        ARTICULOS a
-      LEFT JOIN
-        MARCAS m ON a.MARCA_ID = m.MARCA_ID
-      LEFT JOIN
-        ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
-    `;
-
-    // Add search filter if provided
-    if (search) {
-      const searchEscaped = search.replace(/'/g, "''"); // prevent SQL injection
-      sql += `
-        WHERE UPPER(a.CALC_DESC_EXTEND) LIKE '%${searchEscaped.toUpperCase()}%'
-      `;
-    }
-
-    sql += ' ROWS 20';
-
-    db.query(sql, (err, result) => {
-      db.detach();
-
+    db.query(sql, async (err, articles) => {
       if (err) {
-        console.error('❌ Query Error:', err.message);
+        db.detach();
         return res.status(500).json({ error: 'Query failed', details: err.message });
       }
 
-      const cleaned = result.map(row => ({
-        id: row.ART_ID,
-        descripcion: row.CALC_DESC_EXTEND ? row.CALC_DESC_EXTEND.trim() : '',
-        marca: row.MARCA ? row.MARCA.trim() : null,
-        rubro: row.RUBRO_NOMBRE ? row.RUBRO_NOMBRE.trim() : null,
-        nota: row.NOTA ? row.NOTA.trim() : null
-      }));
+      const ids = articles.map(a => a.ART_ID).join(',');
 
-      res.json(cleaned);
-    });
-  });
-});
+      const queries = {
+        aplicaciones: `SELECT aa.ART_ID, ap.APLICACION_PATH, aa.NOTA, aa.DESDE, aa.HASTA
+                       FROM ART_APLICACION aa
+                       JOIN APLICACIONES ap ON aa.APLIC_ID = ap.APLIC_ID
+                       WHERE aa.ART_ID IN (${ids})`,
 
+        precios: `SELECT ART_ID, PR_FINAL FROM ARTLPR WHERE LISTA_ID = 7 AND ART_ID IN (${ids})`,
 
-app.get('/articles/dependencies', (req, res) => {
-  Firebird.attach(dbOptions, (err, db) => {
-    if (err) return res.status(500).json({ error: 'Database connection failed' });
+        stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = 12 AND ART_ID IN (${ids})`,
 
-    const sql = 'SELECT FIRST 3 * FROM STOCK';
+        rels: `SELECT ART_ID, ART_REL_ID, ART_REL_TIPO_ID FROM ART_ART
+               WHERE ART_ID IN (${ids})`
+      };
 
-    db.query(sql, (err, result) => {
-      db.detach();
+      const responses = {};
+      let pending = Object.keys(queries).length;
 
-      if (err) {
-        console.error('❌ STOCK error:', err.message);
-        return res.status(500).json({ error: 'Query failed', details: err.message });
-      }
+      Object.entries(queries).forEach(([key, q]) => {
+        db.query(q, (err, rows) => {
+          responses[key] = !err ? rows : [];
+          if (--pending === 0) {
+            db.detach();
+            const result = articles.map(a => {
+              const id = a.ART_ID;
 
-      res.json(result);
-    });
-  });
-});
+              const aplicaciones = responses.aplicaciones
+                .filter(ap => ap.ART_ID === id)
+                .map(ap => ({
+                  aplicacion: ap.APLICACION_PATH?.trim(),
+                  nota: ap.NOTA?.trim(),
+                  desde: ap.DESDE,
+                  hasta: ap.HASTA
+                }));
 
+              const precio = responses.precios.find(p => p.ART_ID === id)?.PR_FINAL || null;
+              const stock = responses.stock.find(s => s.ART_ID === id)?.EXISTENCIA || null;
 
+              const complementarios = responses.rels
+                .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 2)
+                .map(r => r.ART_REL_ID);
 
+              const sustitutos = responses.rels
+                .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 1)
+                .map(r => r.ART_REL_ID);
 
+              return {
+                id: id,
+                descripcion: a.CALC_DESC_EXTEND?.trim() || '',
+                marca: a.MARCA?.trim() || null,
+                rubro: a.RUBRO_NOMBRE?.trim() || null,
+                nota: a.NOTA?.trim() || null,
+                aplicaciones,
+                precio,
+                stock,
+                complementarios,
+                sustitutos
+              };
+            });
 
-
-
-// Get foreign key relations of "articulos"
-app.get('/articles/relations', (req, res) => {
-  Firebird.attach(dbOptions, (err, db) => {
-    if (err) {
-      return res.status(500).json({ error: 'DB connection error' });
-    }
-
-    const sql = `
-      SELECT
-        rc.RDB$CONSTRAINT_NAME AS CONSTRAINT_NAME,
-        rc.RDB$RELATION_NAME AS TABLE_NAME,
-        rfc.RDB$FIELD_NAME AS FIELD_NAME,
-        i.RDB$RELATION_NAME AS REFERENCED_TABLE,
-        s.RDB$FIELD_NAME AS REFERENCED_COLUMN
-      FROM
-        RDB$RELATION_CONSTRAINTS rc
-        JOIN RDB$REF_CONSTRAINTS ref ON rc.RDB$CONSTRAINT_NAME = ref.RDB$CONSTRAINT_NAME
-        JOIN RDB$RELATION_CONSTRAINTS rc2 ON ref.RDB$CONST_NAME_UQ = rc2.RDB$CONSTRAINT_NAME
-        JOIN RDB$INDEX_SEGMENTS rfc ON rc.RDB$INDEX_NAME = rfc.RDB$INDEX_NAME
-        JOIN RDB$INDICES i ON rc2.RDB$INDEX_NAME = i.RDB$INDEX_NAME
-        JOIN RDB$INDEX_SEGMENTS s ON i.RDB$INDEX_NAME = s.RDB$INDEX_NAME
-      WHERE
-        rc.RDB$RELATION_NAME = 'ARTICULOS'
-    `;
-
-    db.query(sql, (err, result) => {
-      db.detach();
-
-      if (err) {
-        return res.status(500).json({ error: 'Query error', details: err.message });
-      }
-
-      // Trim CHAR fields (Firebird pads with spaces)
-      const cleaned = result.map(row => ({
-        constraint_name: row.CONSTRAINT_NAME ? row.CONSTRAINT_NAME.trim() : null,
-        table_name: row.TABLE_NAME ? row.TABLE_NAME.trim() : null,
-        field_name: row.FIELD_NAME ? row.FIELD_NAME.trim() : null,
-        referenced_table: row.REFERENCED_TABLE ? row.REFERENCED_TABLE.trim() : null,
-        referenced_column: row.REFERENCED_COLUMN ? row.REFERENCED_COLUMN.trim() : null
-      }));
-
-      res.json(cleaned);
+            res.json(result);
+          }
+        });
+      });
     });
   });
 });
