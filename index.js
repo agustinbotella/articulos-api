@@ -351,11 +351,7 @@ app.get('/articles', (req, res) => {
       a.MED, 
       a.NOTA,
       a.CALC_DESC_EXTEND as ORIGINAL_DESC,
-      CASE 
-        WHEN TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) = '' 
-        THEN a.CALC_DESC_EXTEND 
-        ELSE TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, ''))
-      END AS CALC_DESC_EXTEND,
+      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) AS CALC_DESC_EXTEND,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
@@ -453,11 +449,7 @@ app.get('/articles', (req, res) => {
           const relatedArticlesQuery = `
             SELECT 
               a.ART_ID,
-              CASE 
-                WHEN TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) = '' 
-                THEN a.CALC_DESC_EXTEND 
-                ELSE TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, ''))
-              END AS CALC_DESC_EXTEND,
+              TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) AS CALC_DESC_EXTEND,
               m.MARCA,
               lp.PR_FINAL as PRECIO,
               s.EXISTENCIA as STOCK
