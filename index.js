@@ -351,30 +351,12 @@ app.get('/articles', (req, res) => {
       a.MED, 
       a.NOTA,
       a.CALC_DESC_EXTEND as ORIGINAL_DESC,
-      (SELECT FIRST 1 aa_desde.DESDE 
-       FROM ART_APLICACION aa_desde 
-       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) AS ART_APLICACION_DESDE,
-      (SELECT FIRST 1 aa_hasta.HASTA 
-       FROM ART_APLICACION aa_hasta 
-       WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) AS ART_APLICACION_HASTA,
+
       (SELECT FIRST 1 aa_nota.NOTA 
        FROM ART_APLICACION aa_nota 
        WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
       TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-           CASE WHEN (SELECT FIRST 1 aa_desde.DESDE 
-                      FROM ART_APLICACION aa_desde 
-                      WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
-                THEN ' DESDE ' || (SELECT FIRST 1 aa_desde.DESDE 
-                                   FROM ART_APLICACION aa_desde 
-                                   WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL)
-                ELSE '' END ||
-           CASE WHEN (SELECT FIRST 1 aa_hasta.HASTA 
-                      FROM ART_APLICACION aa_hasta 
-                      WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) IS NOT NULL
-                THEN ' HASTA ' || (SELECT FIRST 1 aa_hasta.HASTA 
-                                   FROM ART_APLICACION aa_hasta 
-                                   WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL)
-                ELSE '' END ||
+
            CASE WHEN (SELECT FIRST 1 aa_desc.NOTA 
                       FROM ART_APLICACION aa_desc 
                       WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL) IS NOT NULL 
@@ -483,20 +465,7 @@ app.get('/articles', (req, res) => {
             SELECT 
               a.ART_ID,
               TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-                   CASE WHEN (SELECT FIRST 1 aa_desde_rel.DESDE 
-                              FROM ART_APLICACION aa_desde_rel 
-                              WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
-                        THEN ' DESDE ' || (SELECT FIRST 1 aa_desde_rel.DESDE 
-                                           FROM ART_APLICACION aa_desde_rel 
-                                           WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL)
-                        ELSE '' END ||
-                   CASE WHEN (SELECT FIRST 1 aa_hasta_rel.HASTA 
-                              FROM ART_APLICACION aa_hasta_rel 
-                              WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) IS NOT NULL
-                        THEN ' HASTA ' || (SELECT FIRST 1 aa_hasta_rel.HASTA 
-                                           FROM ART_APLICACION aa_hasta_rel 
-                                           WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL)
-                        ELSE '' END ||
+
                    CASE WHEN (SELECT FIRST 1 aa_rel.NOTA 
                               FROM ART_APLICACION aa_rel 
                               WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
@@ -613,8 +582,6 @@ app.get('/articles', (req, res) => {
                 MOD: a.MOD,
                 MED: a.MED, 
                 NOTA: a.NOTA,
-                ART_APLICACION_DESDE: a.ART_APLICACION_DESDE,
-                ART_APLICACION_HASTA: a.ART_APLICACION_HASTA,
                 ART_APLICACION_NOTAS: a.ART_APLICACION_NOTAS,
                 ORIGINAL_DESC: a.ORIGINAL_DESC,
                 CALC_DESC_EXTEND_RAW: a.CALC_DESC_EXTEND,
