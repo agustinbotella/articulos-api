@@ -556,6 +556,11 @@ app.get('/articles', (req, res) => {
                 return { id: r.ART_REL_ID };
               });
 
+            // Convert buffer to string if needed
+            const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
+              ? a.CALC_DESC_EXTEND.toString('utf8') 
+              : a.CALC_DESC_EXTEND;
+
             // Debug logging for first few articles
             if (debugCounter < 3) {
               console.log(`🔍 DEBUG Article ${id}:`, {
@@ -568,11 +573,6 @@ app.get('/articles', (req, res) => {
               });
               debugCounter++;
             }
-
-            // Convert buffer to string if needed
-            const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
-              ? a.CALC_DESC_EXTEND.toString('utf8') 
-              : a.CALC_DESC_EXTEND;
 
             return {
               id,
