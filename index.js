@@ -1,8 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const Firebird = require('node-firebird-dev');
+const ngrok = require('@ngrok/ngrok');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -663,6 +665,35 @@ app.get('/articles', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 API listening at http://localhost:${PORT}`);
+  
+  // Start ngrok tunnel if NGROK_AUTHTOKEN is provided
+  if (process.env.NGROK_AUTHTOKEN) {
+    try {
+      console.log('🔗 Starting ngrok tunnel...');
+      
+      // Establish the ngrok tunnel
+      const listener = await ngrok.forward({ 
+        addr: PORT, 
+        authtoken: process.env.NGROK_AUTHTOKEN 
+      });
+      
+      console.log(`🌐 ngrok tunnel established at: ${listener.url()}`);
+      console.log(`🌐 Public API URL: ${listener.url()}`);
+      console.log('');
+      console.log('📋 Test endpoints:');
+      console.log(`   • Health check: ${listener.url()}/`);
+      console.log(`   • Articles: ${listener.url()}/articles?search=motor`);
+      console.log(`   • Aplicaciones: ${listener.url()}/aplicaciones?search=motor`);
+      console.log(`   • Familias: ${listener.url()}/familias`);
+      console.log('');
+      
+    } catch (error) {
+      console.error('❌ Failed to start ngrok tunnel:', error.message);
+      console.log('💡 Make sure your NGROK_AUTHTOKEN is correct');
+    }
+  } else {
+    console.log('💡 To expose this API publicly, set NGROK_AUTHTOKEN environment variable');
+  }
 });
