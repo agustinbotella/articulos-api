@@ -351,34 +351,34 @@ app.get('/articles', (req, res) => {
       a.MED, 
       a.NOTA,
       a.CALC_DESC_EXTEND as ORIGINAL_DESC,
-      (SELECT LIST(DISTINCT aa_desde.DESDE, ', ') 
+      (SELECT LIST(aa_desde.DESDE, ', ') 
        FROM ART_APLICACION aa_desde 
        WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) AS ART_APLICACION_DESDE,
-      (SELECT LIST(DISTINCT aa_hasta.HASTA, ', ') 
+      (SELECT LIST(aa_hasta.HASTA, ', ') 
        FROM ART_APLICACION aa_hasta 
        WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) AS ART_APLICACION_HASTA,
-      (SELECT LIST(DISTINCT aa_nota.NOTA, ', ') 
+      (SELECT LIST(aa_nota.NOTA, ', ') 
        FROM ART_APLICACION aa_nota 
        WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
       TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-           CASE WHEN (SELECT LIST(DISTINCT aa_desde.DESDE, ', ') 
+           CASE WHEN (SELECT LIST(aa_desde.DESDE, ', ') 
                       FROM ART_APLICACION aa_desde 
                       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
-                THEN ' DESDE ' || (SELECT LIST(DISTINCT aa_desde.DESDE, ', ') 
+                THEN ' DESDE ' || (SELECT LIST(aa_desde.DESDE, ', ') 
                                    FROM ART_APLICACION aa_desde 
                                    WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL)
                 ELSE '' END ||
-           CASE WHEN (SELECT LIST(DISTINCT aa_hasta.HASTA, ', ') 
+           CASE WHEN (SELECT LIST(aa_hasta.HASTA, ', ') 
                       FROM ART_APLICACION aa_hasta 
                       WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) IS NOT NULL
-                THEN ' HASTA ' || (SELECT LIST(DISTINCT aa_hasta.HASTA, ', ') 
+                THEN ' HASTA ' || (SELECT LIST(aa_hasta.HASTA, ', ') 
                                    FROM ART_APLICACION aa_hasta 
                                    WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL)
                 ELSE '' END ||
-           CASE WHEN (SELECT LIST(DISTINCT aa_desc.NOTA, ', ') 
+           CASE WHEN (SELECT LIST(aa_desc.NOTA, ', ') 
                       FROM ART_APLICACION aa_desc 
                       WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL) IS NOT NULL 
-                THEN ' - Nota: ' || (SELECT LIST(DISTINCT aa_desc.NOTA, ', ') 
+                THEN ' - Nota: ' || (SELECT LIST(aa_desc.NOTA, ', ') 
                                      FROM ART_APLICACION aa_desc 
                                      WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL)
                 ELSE '' END) AS CALC_DESC_EXTEND,
@@ -480,24 +480,24 @@ app.get('/articles', (req, res) => {
             SELECT 
               a.ART_ID,
               TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-                   CASE WHEN (SELECT LIST(DISTINCT aa_desde_rel.DESDE, ', ') 
+                   CASE WHEN (SELECT LIST(aa_desde_rel.DESDE, ', ') 
                               FROM ART_APLICACION aa_desde_rel 
                               WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
-                        THEN ' DESDE ' || (SELECT LIST(DISTINCT aa_desde_rel.DESDE, ', ') 
+                        THEN ' DESDE ' || (SELECT LIST(aa_desde_rel.DESDE, ', ') 
                                            FROM ART_APLICACION aa_desde_rel 
                                            WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL)
                         ELSE '' END ||
-                   CASE WHEN (SELECT LIST(DISTINCT aa_hasta_rel.HASTA, ', ') 
+                   CASE WHEN (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
                               FROM ART_APLICACION aa_hasta_rel 
                               WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) IS NOT NULL
-                        THEN ' HASTA ' || (SELECT LIST(DISTINCT aa_hasta_rel.HASTA, ', ') 
+                        THEN ' HASTA ' || (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
                                            FROM ART_APLICACION aa_hasta_rel 
                                            WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL)
                         ELSE '' END ||
-                   CASE WHEN (SELECT LIST(DISTINCT aa_rel.NOTA, ', ') 
+                   CASE WHEN (SELECT LIST(aa_rel.NOTA, ', ') 
                               FROM ART_APLICACION aa_rel 
                               WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
-                        THEN ' - Nota: ' || (SELECT LIST(DISTINCT aa_rel.NOTA, ', ') 
+                        THEN ' - Nota: ' || (SELECT LIST(aa_rel.NOTA, ', ') 
                                              FROM ART_APLICACION aa_rel 
                                              WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
                         ELSE '' END) AS CALC_DESC_EXTEND,
