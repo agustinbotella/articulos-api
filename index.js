@@ -491,6 +491,7 @@ app.get('/articles', (req, res) => {
       function processResults() {
         db.detach();
 
+        let debugCounter = 0;
         const result = articles.map(a => {
             const id = a.ART_ID;
 
@@ -546,7 +547,7 @@ app.get('/articles', (req, res) => {
               });
 
             // Debug logging for first few articles
-            if (result.length < 3) {
+            if (debugCounter < 3) {
               console.log(`🔍 DEBUG Article ${id}:`, {
                 MOD: a.MOD,
                 MED: a.MED, 
@@ -554,6 +555,7 @@ app.get('/articles', (req, res) => {
                 ORIGINAL_DESC: a.ORIGINAL_DESC,
                 CALC_DESC_EXTEND: a.CALC_DESC_EXTEND
               });
+              debugCounter++;
             }
 
             return {
