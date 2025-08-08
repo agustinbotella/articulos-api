@@ -516,9 +516,14 @@ app.get('/articles', (req, res) => {
               .map(r => {
                 const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
                 if (relatedArticle) {
+                  // Convert buffer to string if needed
+                  const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
+                    ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
+                    : relatedArticle.CALC_DESC_EXTEND;
+                    
                   return {
                     id: relatedArticle.ART_ID,
-                    descripcion: safeTrim(relatedArticle.CALC_DESC_EXTEND) || '',
+                    descripcion: safeTrim(relatedDescripcion) || '',
                     marca: safeTrim(relatedArticle.MARCA),
                     precio: relatedArticle.PRECIO,
                     stock: relatedArticle.STOCK
@@ -534,9 +539,14 @@ app.get('/articles', (req, res) => {
               .map(r => {
                 const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
                 if (relatedArticle) {
+                  // Convert buffer to string if needed
+                  const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
+                    ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
+                    : relatedArticle.CALC_DESC_EXTEND;
+                    
                   return {
                     id: relatedArticle.ART_ID,
-                    descripcion: safeTrim(relatedArticle.CALC_DESC_EXTEND) || '',
+                    descripcion: safeTrim(relatedDescripcion) || '',
                     marca: safeTrim(relatedArticle.MARCA),
                     precio: relatedArticle.PRECIO,
                     stock: relatedArticle.STOCK
@@ -553,14 +563,20 @@ app.get('/articles', (req, res) => {
                 MED: a.MED, 
                 NOTA: a.NOTA,
                 ORIGINAL_DESC: a.ORIGINAL_DESC,
-                CALC_DESC_EXTEND: a.CALC_DESC_EXTEND
+                CALC_DESC_EXTEND_RAW: a.CALC_DESC_EXTEND,
+                CALC_DESC_EXTEND_CONVERTED: descripcion
               });
               debugCounter++;
             }
 
+            // Convert buffer to string if needed
+            const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
+              ? a.CALC_DESC_EXTEND.toString('utf8') 
+              : a.CALC_DESC_EXTEND;
+
             return {
               id,
-              descripcion: safeTrim(a.CALC_DESC_EXTEND) || '',
+              descripcion: safeTrim(descripcion) || '',
               marca: safeTrim(a.MARCA),
               rubro: safeTrim(a.RUBRO_NOMBRE),
               nota: safeTrim(a.NOTA),
