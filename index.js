@@ -39,7 +39,8 @@ app.get('/aplicaciones', (req, res) => {
   const startTime = Date.now();
   const search = req.query.search;
 
-  const baseWhere = "a.EMP_ID = 2";
+  // Filter aplicaciones by EMP_ID = 2
+  const baseWhere = "ap.EMP_ID = 2";
   
   // Require search parameter
   if (!search || search.trim() === '') {
@@ -66,7 +67,7 @@ app.get('/aplicaciones', (req, res) => {
         return `UPPER(ap.APLICACION_PATH) LIKE '%${cleanWord}%'`;
       });
       
-      searchFilter = `WHERE (${wordConditions.join(' AND ')})`;
+      searchFilter = `AND (${wordConditions.join(' AND ')})`;
     }
   }
   
@@ -89,7 +90,7 @@ app.get('/aplicaciones', (req, res) => {
     FROM APLICACIONES ap
     LEFT JOIN ART_APLICACION aa ON ap.APLIC_ID = aa.APLIC_ID
     LEFT JOIN ART_APLICACION aa2 ON ap.APLIC_ID = aa2.APLIC_ID
-    ${searchFilter}
+    WHERE ${baseWhere} ${searchFilter}
     GROUP BY ap.APLIC_ID, ap.APLICACION_PATH, ap.NOTA_MEMO, aa.NOTA
     ORDER BY ap.APLICACION_PATH
     ROWS ${offset + 1} TO ${offset + limit}
