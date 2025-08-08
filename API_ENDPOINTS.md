@@ -109,7 +109,7 @@ GET /articles?search=gol power bujia
 ### 3. Search Applications
 **GET** `/aplicaciones`
 
-Returns applications from the APLICACIONES table with optional search functionality.
+Returns applications from the APLICACIONES table. Search parameter is required for performance reasons. Article counts are calculated only for the current page results.
 
 **Parameters:**
 - `search` (string, **required**): Search term - supports word-based search across application paths

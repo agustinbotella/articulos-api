@@ -38,6 +38,8 @@ app.get('/', (req, res) => {
 app.get('/aplicaciones', (req, res) => {
   const startTime = Date.now();
   const search = req.query.search;
+
+  const baseWhere = "a.EMP_ID = 2";
   
   // Require search parameter
   if (!search || search.trim() === '') {
@@ -73,7 +75,7 @@ app.get('/aplicaciones', (req, res) => {
     SELECT COUNT(DISTINCT ap.APLIC_ID) as TOTAL_COUNT
     FROM APLICACIONES ap
     LEFT JOIN ART_APLICACION aa ON ap.APLIC_ID = aa.APLIC_ID
-    ${searchFilter}
+    WHERE ${baseWhere} ${searchFilter}
   `;
 
   // Main query with pagination
