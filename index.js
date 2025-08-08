@@ -20,9 +20,9 @@ const dbOptions = {
 };
 
 // Performance Note: For optimal search performance, consider creating:
-// 1. Index on CALC_DESC_EXTEND: CREATE INDEX IDX_ARTICULOS_DESC ON ARTICULOS (CALC_DESC_EXTEND);
-// 2. Computed column for uppercase search: ALTER TABLE ARTICULOS ADD CALC_DESC_UPPER COMPUTED BY (UPPER(CALC_DESC_EXTEND));
-// 3. Index on computed column: CREATE INDEX IDX_ARTICULOS_DESC_UPPER ON ARTICULOS (CALC_DESC_UPPER);
+// 1. Index on RUBRO_PATH: CREATE INDEX IDX_ARTRUBROS_PATH ON ARTRUBROS (RUBRO_PATH);
+// 2. Computed column for uppercase search: ALTER TABLE ARTRUBROS ADD RUBRO_PATH_UPPER COMPUTED BY (UPPER(RUBRO_PATH));
+// 3. Index on computed column: CREATE INDEX IDX_ARTRUBROS_PATH_UPPER ON ARTRUBROS (RUBRO_PATH_UPPER);
 
 // Utility function to safely trim database strings
 function safeTrim(value) {
@@ -213,7 +213,7 @@ app.get('/articles', (req, res) => {
       // Performance optimization: Use single UPPER() call with multiple LIKE conditions
       const wordConditions = words.map(word => {
         const cleanWord = word.replace(/'/g, "''").toUpperCase();
-        return `UPPER(a.CALC_DESC_EXTEND) LIKE '%${cleanWord}%'`;
+        return `UPPER(r.RUBRO_PATH) LIKE '%${cleanWord}%'`;
       });
       
       searchFilter = `AND (${wordConditions.join(' AND ')})`;
@@ -256,7 +256,7 @@ app.get('/articles', (req, res) => {
   const sql = `
     SELECT DISTINCT
       a.ART_ID,
-      a.CALC_DESC_EXTEND,
+      (COALESCE(a.MOD, '') || ' ' || COALESCE(a.MOD, '') || ' ' || COALESCE(a.NOTA, '')) AS CALC_DESC_EXTEND,
       a.NOTA,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
@@ -355,7 +355,7 @@ app.get('/articles', (req, res) => {
           const relatedArticlesQuery = `
             SELECT 
               a.ART_ID,
-              a.CALC_DESC_EXTEND,
+              (COALESCE(a.MOD, '') || ' ' || COALESCE(a.MOD, '') || ' ' || COALESCE(a.NOTA, '')) AS CALC_DESC_EXTEND,
               m.MARCA,
               lp.PR_FINAL as PRECIO,
               s.EXISTENCIA as STOCK
