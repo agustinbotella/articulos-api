@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const Firebird = require('node-firebird-dev');
-const ngrok = require('@ngrok/ngrok');
+const ngrok = require('ngrok');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -673,20 +673,20 @@ app.listen(PORT, async () => {
     try {
       console.log('🔗 Starting ngrok tunnel...');
       
-      // Establish the ngrok tunnel
-      const listener = await ngrok.forward({ 
-        addr: PORT, 
-        authtoken: process.env.NGROK_AUTHTOKEN 
-      });
+      // Set the auth token
+      await ngrok.authtoken(process.env.NGROK_AUTHTOKEN);
       
-      console.log(`🌐 ngrok tunnel established at: ${listener.url()}`);
-      console.log(`🌐 Public API URL: ${listener.url()}`);
+      // Establish the ngrok tunnel
+      const url = await ngrok.connect(PORT);
+      
+      console.log(`🌐 ngrok tunnel established at: ${url}`);
+      console.log(`🌐 Public API URL: ${url}`);
       console.log('');
       console.log('📋 Test endpoints:');
-      console.log(`   • Health check: ${listener.url()}/`);
-      console.log(`   • Articles: ${listener.url()}/articles?search=motor`);
-      console.log(`   • Aplicaciones: ${listener.url()}/aplicaciones?search=motor`);
-      console.log(`   • Familias: ${listener.url()}/familias`);
+      console.log(`   • Health check: ${url}/`);
+      console.log(`   • Articles: ${url}/articles?search=motor`);
+      console.log(`   • Aplicaciones: ${url}/aplicaciones?search=motor`);
+      console.log(`   • Familias: ${url}/familias`);
       console.log('');
       
     } catch (error) {
