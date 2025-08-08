@@ -348,9 +348,9 @@ app.get('/articles', (req, res) => {
     SELECT DISTINCT
       a.ART_ID,
       CASE 
-        WHEN TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MOD, '') || ' ' || COALESCE(a.NOTA, '')) = '' 
+        WHEN TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) = '' 
         THEN a.CALC_DESC_EXTEND 
-        ELSE TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MOD, '') || ' ' || COALESCE(a.NOTA, ''))
+        ELSE TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, ''))
       END AS CALC_DESC_EXTEND,
       a.NOTA,
       m.MARCA,
@@ -451,9 +451,9 @@ app.get('/articles', (req, res) => {
             SELECT 
               a.ART_ID,
               CASE 
-                WHEN TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MOD, '') || ' ' || COALESCE(a.NOTA, '')) = '' 
+                WHEN TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) = '' 
                 THEN a.CALC_DESC_EXTEND 
-                ELSE TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MOD, '') || ' ' || COALESCE(a.NOTA, ''))
+                ELSE TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, ''))
               END AS CALC_DESC_EXTEND,
               m.MARCA,
               lp.PR_FINAL as PRECIO,
