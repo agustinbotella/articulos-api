@@ -259,7 +259,7 @@ app.get('/articles', (req, res) => {
       a.CALC_DESC_EXTEND,
       a.NOTA,
       m.MARCA,
-      r.RUBRO AS RUBRO_NOMBRE
+      r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
       ARTICULOS a
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
