@@ -350,8 +350,12 @@ app.get('/articles', (req, res) => {
       a.MOD,
       a.MED, 
       a.NOTA,
+      a.DESDE,
+      a.HASTA,
       a.CALC_DESC_EXTEND as ORIGINAL_DESC,
-      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) AS CALC_DESC_EXTEND,
+      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+           CASE WHEN a.DESDE IS NOT NULL THEN ' DESDE ' || a.DESDE ELSE '' END ||
+           CASE WHEN a.HASTA IS NOT NULL THEN ' HASTA ' || a.HASTA ELSE '' END) AS CALC_DESC_EXTEND,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
@@ -449,7 +453,9 @@ app.get('/articles', (req, res) => {
           const relatedArticlesQuery = `
             SELECT 
               a.ART_ID,
-              TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) AS CALC_DESC_EXTEND,
+              TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+                   CASE WHEN a.DESDE IS NOT NULL THEN ' DESDE ' || a.DESDE ELSE '' END ||
+                   CASE WHEN a.HASTA IS NOT NULL THEN ' HASTA ' || a.HASTA ELSE '' END) AS CALC_DESC_EXTEND,
               m.MARCA,
               lp.PR_FINAL as PRECIO,
               s.EXISTENCIA as STOCK
@@ -559,6 +565,8 @@ app.get('/articles', (req, res) => {
                 MOD: a.MOD,
                 MED: a.MED, 
                 NOTA: a.NOTA,
+                DESDE: a.DESDE,
+                HASTA: a.HASTA,
                 ORIGINAL_DESC: a.ORIGINAL_DESC,
                 CALC_DESC_EXTEND_RAW: a.CALC_DESC_EXTEND,
                 CALC_DESC_EXTEND_CONVERTED: descripcion
