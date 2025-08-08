@@ -189,6 +189,97 @@ app.get('/aplicaciones', (req, res) => {
   });
 });
 
+// Familias endpoint - return all ARTRUBROS with optional search
+app.get('/familias', (req, res) => {
+  const startTime = Date.now();
+  const search = req.query.search;
+
+  // Filter familias by EMP_ID = 2
+  const baseWhere = "r.EMP_ID = 2";
+  
+  // Create search filter for RUBRO_PATH
+  let searchFilter = "";
+  if (search && search.trim() !== '') {
+    const words = search.trim().split(/\s+/)
+      .filter(word => word.length > 0)
+      .slice(0, 5); // Limit to 5 words max for performance
+    
+    if (words.length > 0) {
+      const wordConditions = words.map(word => {
+        const cleanWord = word.replace(/'/g, "''").toUpperCase();
+        return `UPPER(r.RUBRO_PATH) LIKE '%${cleanWord}%'`;
+      });
+      
+      searchFilter = `AND (${wordConditions.join(' AND ')})`;
+    }
+  }
+
+  // Query to get all familias/rubros
+  const sql = `
+    SELECT 
+      r.RUBRO_ID,
+      r.EMP_ID,
+      r.RUBRO_PADRE_ID,
+      r.RUBRO,
+      r.RUBRO_PATH,
+      r.IMAGEN,
+      r.NOTA,
+      r.NOTA_MEMO
+    FROM ARTRUBROS r
+    WHERE ${baseWhere} ${searchFilter}
+    ORDER BY r.RUBRO_PATH
+  `;
+
+  Firebird.attach(dbOptions, (err, db) => {
+    if (err) {
+      console.error('DB connection failed:', err);
+      return res.status(500).json({ 
+        error: 'Database connection failed',
+        details: err.message 
+      });
+    }
+
+    db.query(sql, (err, familias) => {
+      const endTime = Date.now();
+      const queryTime = endTime - startTime;
+
+      if (err) {
+        db.detach();
+        console.error('Familias query failed:', err);
+        return res.status(500).json({ 
+          error: 'Query failed', 
+          details: err.message 
+        });
+      }
+
+      // Process results and safely trim strings
+      const result = familias.map(familia => ({
+        id: familia.RUBRO_ID,
+        empId: familia.EMP_ID,
+        rubroPadreId: familia.RUBRO_PADRE_ID,
+        rubro: safeTrim(familia.RUBRO) || '',
+        rubroPath: safeTrim(familia.RUBRO_PATH) || '',
+        imagen: safeTrim(familia.IMAGEN),
+        nota: safeTrim(familia.NOTA),
+        notaMemo: safeTrim(familia.NOTA_MEMO)
+      }));
+
+      db.detach();
+      
+      console.log(`👥 Familias: "${search || 'all'}" | Results: ${result.length} | Time: ${queryTime}ms`);
+      
+      res.json({
+        data: result,
+        meta: {
+          queryTime: queryTime,
+          totalCount: result.length,
+          searchTerm: search || null
+        }
+      });
+    });
+  });
+});
+
 app.get('/articles', (req, res) => {
   const startTime = Date.now(); // Performance monitoring
   const search = req.query.search;

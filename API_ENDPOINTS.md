@@ -176,6 +176,70 @@ GET /aplicaciones?search=corsa 1.4
 
 ---
 
+### 4. Get Familias
+**GET** `/familias`
+
+Returns all familias/categories from the ARTRUBROS table with optional search functionality. No pagination is applied - returns all matching results.
+
+**Parameters:**
+- `search` (string, optional): Search term - supports word-based search across RUBRO_PATH
+
+**Example Requests:**
+```bash
+# Get all familias
+GET /familias
+
+# Search for specific familias
+GET /familias?search=motor
+GET /familias?search=filtro aceite
+GET /familias?search=encendido
+```
+
+**Response Format:**
+```json
+{
+  "data": [
+    {
+      "id": 45,
+      "empId": 2,
+      "rubroPadreId": 12,
+      "rubro": "Filtros de Aceite",
+      "rubroPath": "LUBRICACION > FILTROS > ACEITE",
+      "imagen": "filtros_aceite.jpg",
+      "nota": "Filtros de alta calidad",
+      "notaMemo": "Verificar compatibilidad antes de la instalación"
+    },
+    {
+      "id": 46,
+      "empId": 2,
+      "rubroPadreId": null,
+      "rubro": "Motor",
+      "rubroPath": "MOTOR",
+      "imagen": null,
+      "nota": null,
+      "notaMemo": "Categoría principal de componentes del motor"
+    }
+  ],
+  "meta": {
+    "queryTime": 25,
+    "totalCount": 156,
+    "searchTerm": "motor"
+  }
+}
+```
+
+**Response Fields:**
+- `id`: Rubro ID (RUBRO_ID)
+- `empId`: Company ID (EMP_ID) - always 2
+- `rubroPadreId`: Parent rubro ID (RUBRO_PADRE_ID) - null for root categories
+- `rubro`: Rubro name (RUBRO)
+- `rubroPath`: Full hierarchical path (RUBRO_PATH)
+- `imagen`: Image filename if available (IMAGEN)
+- `nota`: Short note (NOTA)
+- `notaMemo`: Extended notes (NOTA_MEMO)
+
+---
+
 ## 🔧 Technical Details
 
 ### Database Configuration
@@ -220,6 +284,7 @@ All endpoints return consistent error format:
 
 ### Expected Response Times
 - **Applications endpoint:** < 50ms (simple query)
+- **Familias endpoint:** < 30ms (simple query, no pagination)
 - **Articles search (1-2 words):** < 200ms
 - **Articles search (3-4 words):** < 500ms
 - **Articles search (5 words):** < 800ms
@@ -248,7 +313,11 @@ CREATE INDEX IDX_ARTICULOS_DESC_UPPER ON ARTICULOS (CALC_DESC_UPPER);
 curl http://192.168.1.106:3000/
 
 # Test applications endpoint
-curl http://192.168.1.106:3000/aplicaciones
+curl "http://192.168.1.106:3000/aplicaciones?search=motor"
+
+# Test familias endpoint
+curl http://192.168.1.106:3000/familias
+curl "http://192.168.1.106:3000/familias?search=filtro"
 
 # Test articles search
 curl "http://192.168.1.106:3000/articles?search=bujia"
