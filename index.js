@@ -350,12 +350,38 @@ app.get('/articles', (req, res) => {
       a.MOD,
       a.MED, 
       a.NOTA,
-      a.DESDE,
-      a.HASTA,
       a.CALC_DESC_EXTEND as ORIGINAL_DESC,
+      (SELECT LIST(DISTINCT aa_desde.DESDE, ', ') 
+       FROM ART_APLICACION aa_desde 
+       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) AS ART_APLICACION_DESDE,
+      (SELECT LIST(DISTINCT aa_hasta.HASTA, ', ') 
+       FROM ART_APLICACION aa_hasta 
+       WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) AS ART_APLICACION_HASTA,
+      (SELECT LIST(DISTINCT aa_nota.NOTA, ', ') 
+       FROM ART_APLICACION aa_nota 
+       WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
       TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-           CASE WHEN a.DESDE IS NOT NULL THEN ' DESDE ' || a.DESDE ELSE '' END ||
-           CASE WHEN a.HASTA IS NOT NULL THEN ' HASTA ' || a.HASTA ELSE '' END) AS CALC_DESC_EXTEND,
+           CASE WHEN (SELECT LIST(DISTINCT aa_desde.DESDE, ', ') 
+                      FROM ART_APLICACION aa_desde 
+                      WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
+                THEN ' DESDE ' || (SELECT LIST(DISTINCT aa_desde.DESDE, ', ') 
+                                   FROM ART_APLICACION aa_desde 
+                                   WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL)
+                ELSE '' END ||
+           CASE WHEN (SELECT LIST(DISTINCT aa_hasta.HASTA, ', ') 
+                      FROM ART_APLICACION aa_hasta 
+                      WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) IS NOT NULL
+                THEN ' HASTA ' || (SELECT LIST(DISTINCT aa_hasta.HASTA, ', ') 
+                                   FROM ART_APLICACION aa_hasta 
+                                   WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL)
+                ELSE '' END ||
+           CASE WHEN (SELECT LIST(DISTINCT aa_desc.NOTA, ', ') 
+                      FROM ART_APLICACION aa_desc 
+                      WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL) IS NOT NULL 
+                THEN ' - Nota: ' || (SELECT LIST(DISTINCT aa_desc.NOTA, ', ') 
+                                     FROM ART_APLICACION aa_desc 
+                                     WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL)
+                ELSE '' END) AS CALC_DESC_EXTEND,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
@@ -455,7 +481,14 @@ app.get('/articles', (req, res) => {
               a.ART_ID,
               TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
                    CASE WHEN a.DESDE IS NOT NULL THEN ' DESDE ' || a.DESDE ELSE '' END ||
-                   CASE WHEN a.HASTA IS NOT NULL THEN ' HASTA ' || a.HASTA ELSE '' END) AS CALC_DESC_EXTEND,
+                   CASE WHEN a.HASTA IS NOT NULL THEN ' HASTA ' || a.HASTA ELSE '' END ||
+                   CASE WHEN (SELECT LIST(DISTINCT aa_rel.NOTA, ', ') 
+                              FROM ART_APLICACION aa_rel 
+                              WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
+                        THEN ' - Nota: ' || (SELECT LIST(DISTINCT aa_rel.NOTA, ', ') 
+                                             FROM ART_APLICACION aa_rel 
+                                             WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
+                        ELSE '' END) AS CALC_DESC_EXTEND,
               m.MARCA,
               lp.PR_FINAL as PRECIO,
               s.EXISTENCIA as STOCK
@@ -567,6 +600,7 @@ app.get('/articles', (req, res) => {
                 NOTA: a.NOTA,
                 DESDE: a.DESDE,
                 HASTA: a.HASTA,
+                ART_APLICACION_NOTAS: a.ART_APLICACION_NOTAS,
                 ORIGINAL_DESC: a.ORIGINAL_DESC,
                 CALC_DESC_EXTEND_RAW: a.CALC_DESC_EXTEND,
                 CALC_DESC_EXTEND_CONVERTED: descripcion
