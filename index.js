@@ -347,12 +347,15 @@ app.get('/articles', (req, res) => {
   const sql = `
     SELECT DISTINCT
       a.ART_ID,
+      a.MOD,
+      a.MED, 
+      a.NOTA,
+      a.CALC_DESC_EXTEND as ORIGINAL_DESC,
       CASE 
         WHEN TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '')) = '' 
         THEN a.CALC_DESC_EXTEND 
         ELSE TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, ''))
       END AS CALC_DESC_EXTEND,
-      a.NOTA,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
@@ -541,6 +544,17 @@ app.get('/articles', (req, res) => {
                 // Fallback to just ID if details not found
                 return { id: r.ART_REL_ID };
               });
+
+            // Debug logging for first few articles
+            if (result.length < 3) {
+              console.log(`🔍 DEBUG Article ${id}:`, {
+                MOD: a.MOD,
+                MED: a.MED, 
+                NOTA: a.NOTA,
+                ORIGINAL_DESC: a.ORIGINAL_DESC,
+                CALC_DESC_EXTEND: a.CALC_DESC_EXTEND
+              });
+            }
 
             return {
               id,
