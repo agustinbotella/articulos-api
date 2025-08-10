@@ -506,19 +506,14 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
       const ids = articles.map(a => a.ART_ID).join(',');
 
-      const queries = {
-        aplicaciones: `SELECT aa.ART_ID, ap.APLICACION_PATH, aa.NOTA, aa.DESDE, aa.HASTA
-                       FROM ART_APLICACION aa
-                       JOIN APLICACIONES ap ON aa.APLIC_ID = ap.APLIC_ID
-                       WHERE aa.ART_ID IN (${ids})`,
+          const queries = {
+      precios: `SELECT ART_ID, PR_FINAL FROM ARTLPR WHERE LISTA_ID = 7 AND ART_ID IN (${ids})`,
 
-        precios: `SELECT ART_ID, PR_FINAL FROM ARTLPR WHERE LISTA_ID = 7 AND ART_ID IN (${ids})`,
+      stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = 12 AND ART_ID IN (${ids})`,
 
-        stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = 12 AND ART_ID IN (${ids})`,
-
-        rels: `SELECT ART_ID, ART_REL_ID, ART_REL_TIPO_ID FROM ART_ART
-               WHERE ART_ID IN (${ids})`
-      };
+      rels: `SELECT ART_ID, ART_REL_ID, ART_REL_TIPO_ID FROM ART_ART
+             WHERE ART_ID IN (${ids})`
+    };
 
       const responses = {};
       const keys = Object.keys(queries);
@@ -603,14 +598,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
         const result = articles.map(a => {
             const id = a.ART_ID;
 
-            const aplicaciones = responses.aplicaciones
-              .filter(ap => ap.ART_ID === id)
-              .map(ap => ({
-                aplicacion: safeTrim(ap.APLICACION_PATH),
-                nota: safeTrim(ap.NOTA),
-                desde: ap.DESDE,
-                hasta: ap.HASTA
-              }));
+                      // Remove aplicaciones - not needed for this endpoint
 
             const precioItem = responses.precios.find(p => p.ART_ID === id);
             const precio = precioItem ? precioItem.PR_FINAL : null;
@@ -685,24 +673,21 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
               debugCounter++;
             }
 
-            const articleData = {
-              id,
-              descripcion: safeTrim(descripcion) || '',
-              marca: safeTrim(a.MARCA),
-              rubro: safeTrim(a.RUBRO_NOMBRE),
-              nota: safeTrim(a.NOTA),
-              precio,
-              stock,
-              complementarios,
-              sustitutos
-            };
+                      const articleData = {
+            id,
+            descripcion: safeTrim(descripcion) || '',
+            marca: safeTrim(a.MARCA),
+            rubro: safeTrim(a.RUBRO_NOMBRE),
+            nota: safeTrim(a.NOTA),
+            precio,
+            stock,
+            complementarios,
+            sustitutos
+          };
 
-            // Only include applications if not for bot
-            if (!forBot) {
-              articleData.aplicaciones = aplicaciones;
-            }
+          // No aplicaciones field - not needed for this endpoint
 
-            return articleData;
+          return articleData;
           });
 
           const endTime = Date.now();
@@ -748,7 +733,6 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 // New endpoint: Get articles by application IDs
 app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
   const startTime = Date.now(); // Performance monitoring
-  const forBot = req.query.forBot === 'true';
   const onlyWithStock = req.query.onlyWithStock === 'true'; // Stock filter
   
   // Parse application IDs - support both single applicationId and array applicationIds
@@ -861,7 +845,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
         const endTime = Date.now();
         const queryTime = endTime - startTime;
         
-        console.log(`🎯 By-Applications: App IDs: [${applicationIdsString}] | Stock Filter: ${onlyWithStock} | ${forBot ? 'Bot' : 'Web'} | Results: 0 | Time: ${queryTime}ms`);
+        console.log(`🎯 By-Applications: App IDs: [${applicationIdsString}] | Stock Filter: ${onlyWithStock} | Results: 0 | Time: ${queryTime}ms`);
         
         return res.json({
           data: [],
@@ -1061,7 +1045,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
         const queryTime = endTime - startTime;
         
         // Log performance for monitoring
-        console.log(`🎯 By-Applications: App IDs: [${applicationIdsString}] | Stock Filter: ${onlyWithStock} | ${forBot ? 'Bot' : 'Web'} | Results: ${result.length} | Time: ${queryTime}ms`);
+        console.log(`🎯 By-Applications: App IDs: [${applicationIdsString}] | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
         
         return res.json({
           data: result,

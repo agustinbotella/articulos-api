@@ -109,13 +109,12 @@ GET /articles?search=gol power bujia
 ### 3. Get Articles by Application IDs
 **GET** `/articles/by-applications`
 
-Retrieve all articles that belong to specific application IDs. This endpoint requires application ID(s) and returns all matching articles without pagination. Supports the forBot parameter to exclude aplicaciones field.
+Retrieve all articles that belong to specific application IDs. This endpoint requires application ID(s) and returns all matching articles without pagination.
 
 **Parameters:**
 - `applicationId` (integer, optional): Single application ID to filter by
 - `applicationIds` (string/array, optional): Multiple application IDs (comma-separated string or array)
 - `onlyWithStock` (boolean, optional): Filter only articles with stock (default: false)
-- `forBot` (boolean, optional): When true, excludes aplicaciones field (default: false)
 
 **Note:** Either `applicationId` or `applicationIds` must be provided. If neither is provided, the endpoint returns a 400 error.
 
@@ -130,62 +129,11 @@ GET /articles/by-applications?applicationIds=365,421,508
 # With stock filter
 GET /articles/by-applications?applicationIds=365,421&onlyWithStock=true
 
-# For bot usage (excludes aplicaciones field)
-GET /articles/by-applications?applicationIds=365&forBot=true
-
 # Combined filters
-GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true&forBot=true
+GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true
 ```
 
 **Response Format:**
-```json
-{
-  "data": [
-    {
-      "id": 61085,
-      "descripcion": "Bujía Gol Power",
-      "marca": "BOSCH",
-      "rubro": "Encendido",
-      "nota": "Producto de alta demanda",
-      "precio": 1234.56,
-      "stock": 42,
-      "aplicaciones": [
-        {
-          "aplicacion": "MOTORES > VW > 1.6 8V",
-          "nota": null,
-          "desde": "2018-01-01",
-          "hasta": "2020-01-01"
-        }
-      ],
-      "complementarios": [
-        {
-          "id": 208,
-          "descripcion": "Filtro de Aceite",
-          "marca": "MANN",
-          "precio": 890.50,
-          "stock": 15
-        }
-      ],
-      "sustitutos": [
-        {
-          "id": 102,
-          "descripcion": "Bujía Gol Power Alternativa",
-          "marca": "NGK",
-          "precio": 1100.00,
-          "stock": 8
-        }
-      ]
-    }
-  ],
-  "meta": {
-    "queryTime": "125ms",
-    "applicationIds": [365, 421, 508],
-    "totalCount": 1
-  }
-}
-```
-
-**Response Format (with forBot=true):**
 ```json
 {
   "data": [
@@ -457,7 +405,7 @@ curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365,421,
 
 # Test with filters
 curl "http://192.168.1.106:3000/articles?search=bujia&onlyWithStock=true&limit=10"
-curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365&onlyWithStock=true&forBot=true"
+curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365&onlyWithStock=true"
 ```
 
 ### Load Testing
