@@ -106,7 +106,136 @@ GET /articles?search=gol power bujia
 
 ---
 
-### 3. Search Applications
+### 3. Get Articles by Application IDs
+**GET** `/articles/by-applications`
+
+Retrieve all articles that belong to specific application IDs. This endpoint requires application ID(s) and returns all matching articles without pagination. Supports the forBot parameter to exclude aplicaciones field.
+
+**Parameters:**
+- `applicationId` (integer, optional): Single application ID to filter by
+- `applicationIds` (string/array, optional): Multiple application IDs (comma-separated string or array)
+- `onlyWithStock` (boolean, optional): Filter only articles with stock (default: false)
+- `forBot` (boolean, optional): When true, excludes aplicaciones field (default: false)
+
+**Note:** Either `applicationId` or `applicationIds` must be provided. If neither is provided, the endpoint returns a 400 error.
+
+**Example Requests:**
+```bash
+# Single application ID
+GET /articles/by-applications?applicationId=365
+
+# Multiple application IDs (comma-separated)
+GET /articles/by-applications?applicationIds=365,421,508
+
+# With stock filter
+GET /articles/by-applications?applicationIds=365,421&onlyWithStock=true
+
+# For bot usage (excludes aplicaciones field)
+GET /articles/by-applications?applicationIds=365&forBot=true
+
+# Combined filters
+GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true&forBot=true
+```
+
+**Response Format:**
+```json
+{
+  "data": [
+    {
+      "id": 61085,
+      "descripcion": "Bujía Gol Power",
+      "marca": "BOSCH",
+      "rubro": "Encendido",
+      "nota": "Producto de alta demanda",
+      "precio": 1234.56,
+      "stock": 42,
+      "aplicaciones": [
+        {
+          "aplicacion": "MOTORES > VW > 1.6 8V",
+          "nota": null,
+          "desde": "2018-01-01",
+          "hasta": "2020-01-01"
+        }
+      ],
+      "complementarios": [
+        {
+          "id": 208,
+          "descripcion": "Filtro de Aceite",
+          "marca": "MANN",
+          "precio": 890.50,
+          "stock": 15
+        }
+      ],
+      "sustitutos": [
+        {
+          "id": 102,
+          "descripcion": "Bujía Gol Power Alternativa",
+          "marca": "NGK",
+          "precio": 1100.00,
+          "stock": 8
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "queryTime": "125ms",
+    "applicationIds": [365, 421, 508],
+    "totalCount": 1
+  }
+}
+```
+
+**Response Format (with forBot=true):**
+```json
+{
+  "data": [
+    {
+      "id": 61085,
+      "descripcion": "Bujía Gol Power",
+      "marca": "BOSCH",
+      "rubro": "Encendido",
+      "nota": "Producto de alta demanda",
+      "precio": 1234.56,
+      "stock": 42,
+      "complementarios": [
+        {
+          "id": 208,
+          "descripcion": "Filtro de Aceite",
+          "marca": "MANN",
+          "precio": 890.50,
+          "stock": 15
+        }
+      ],
+      "sustitutos": [
+        {
+          "id": 102,
+          "descripcion": "Bujía Gol Power Alternativa",
+          "marca": "NGK",
+          "precio": 1100.00,
+          "stock": 8
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "queryTime": "125ms",
+    "applicationIds": [365, 421, 508],
+    "totalCount": 1
+  }
+}
+```
+
+**Error Response (when no application IDs provided):**
+```json
+{
+  "error": "Application IDs required",
+  "message": "Please provide either applicationId (single) or applicationIds (array) parameter"
+}
+```
+
+---
+
+### 4. Search Applications
 **GET** `/aplicaciones`
 
 Returns applications from the APLICACIONES table. Search parameter is required for performance reasons. Article counts are calculated only for the current page results.
@@ -176,7 +305,7 @@ GET /aplicaciones?search=corsa 1.4
 
 ---
 
-### 4. Get Familias
+### 5. Get Familias
 **GET** `/familias`
 
 Returns all familias/categories from the ARTRUBROS table with optional search functionality. No pagination is applied - returns all matching results.
@@ -322,8 +451,13 @@ curl "http://192.168.1.106:3000/familias?search=filtro"
 # Test articles search
 curl "http://192.168.1.106:3000/articles?search=bujia"
 
+# Test articles by application IDs
+curl "http://192.168.1.106:3000/articles/by-applications?applicationId=365"
+curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365,421,508"
+
 # Test with filters
 curl "http://192.168.1.106:3000/articles?search=bujia&onlyWithStock=true&limit=10"
+curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365&onlyWithStock=true&forBot=true"
 ```
 
 ### Load Testing
