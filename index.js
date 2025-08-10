@@ -1,5 +1,6 @@
 const express = require('express');
 const Firebird = require('node-firebird-dev');
+require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
@@ -7,9 +8,42 @@ const PORT = 3000;
 // CORS middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, X-API-Key');
   next();
 });
+
+// Authentication middleware
+const authenticateAPIKey = (req, res, next) => {
+  const apiKey = req.headers['x-api-key'];
+  const validApiKey = process.env.APIKEY;
+
+  // Check if APIKEY is defined in environment
+  if (!validApiKey) {
+    return res.status(500).json({
+      error: 'Server configuration error',
+      message: 'API key not configured on server'
+    });
+  }
+
+  // Check if API key header is provided
+  if (!apiKey) {
+    return res.status(401).json({
+      error: 'Authentication required',
+      message: 'API key header (X-API-Key) is required'
+    });
+  }
+
+  // Validate API key
+  if (apiKey !== validApiKey) {
+    return res.status(401).json({
+      error: 'Authentication failed',
+      message: 'Invalid API key'
+    });
+  }
+
+  // API key is valid, proceed to next middleware
+  next();
+};
 
 // Firebird connection options using LECTURA
 const dbOptions = {
@@ -35,9 +69,10 @@ app.get('/', (req, res) => {
 });
 
 // Aplicaciones endpoint - search-only with required search parameter
-app.get('/aplicaciones', (req, res) => {
+app.get('/aplicaciones', authenticateAPIKey, (req, res) => {
   const startTime = Date.now();
   const search = req.query.search;
+  const forBot = req.query.forBot === 'true';
 
   // Filter aplicaciones by EMP_ID = 2
   const baseWhere = "ap.EMP_ID = 2";
@@ -79,7 +114,7 @@ app.get('/aplicaciones', (req, res) => {
     WHERE ${baseWhere} ${searchFilter}
   `;
 
-  // Main query with pagination
+  // Main query with optional pagination
   const sql = `
     SELECT 
       ap.APLIC_ID,
@@ -93,7 +128,7 @@ app.get('/aplicaciones', (req, res) => {
     WHERE ${baseWhere} ${searchFilter}
     GROUP BY ap.APLIC_ID, ap.APLICACION_PATH, ap.NOTA_MEMO, aa.NOTA
     ORDER BY ap.APLICACION_PATH
-    ROWS ${offset + 1} TO ${offset + limit}
+    ${forBot ? '' : `ROWS ${offset + 1} TO ${offset + limit}`}
   `;
 
   Firebird.attach(dbOptions, (err, db) => {
@@ -125,22 +160,32 @@ app.get('/aplicaciones', (req, res) => {
         const endTime = Date.now();
         const queryTime = endTime - startTime;
         
-        console.log(`📋 Aplicaciones: "${search || 'all'}" | Page: ${page} | Results: 0 | Total: 0 | Time: ${queryTime}ms`);
+        console.log(`📋 Aplicaciones: "${search || 'all'}" | ${forBot ? 'Bot' : `Page: ${page}`} | Results: 0 | Total: 0 | Time: ${queryTime}ms`);
         
-        return res.json({
-          data: [],
-          pagination: {
-            currentPage: page,
-            totalPages: Math.min(totalPages, 100), // Max 100 pages
-            totalCount: totalCount,
-            limit: limit,
-            hasNextPage: false,
-            hasPreviousPage: false
-          },
-          meta: {
-            queryTime: queryTime
-          }
-        });
+        if (forBot) {
+          return res.json({
+            data: [],
+            meta: {
+              queryTime: queryTime,
+              totalCount: totalCount
+            }
+          });
+        } else {
+          return res.json({
+            data: [],
+            pagination: {
+              currentPage: page,
+              totalPages: Math.min(totalPages, 100), // Max 100 pages
+              totalCount: totalCount,
+              limit: limit,
+              hasNextPage: false,
+              hasPreviousPage: false
+            },
+            meta: {
+              queryTime: queryTime
+            }
+          });
+        }
       }
 
       // Execute main query
@@ -168,31 +213,42 @@ app.get('/aplicaciones', (req, res) => {
 
         db.detach();
         
-        console.log(`📋 Aplicaciones: "${search || 'all'}" | Page: ${page} | Results: ${result.length} | Total: ${totalCount} | Time: ${queryTime}ms`);
+        console.log(`📋 Aplicaciones: "${search || 'all'}" | ${forBot ? 'Bot' : `Page: ${page}`} | Results: ${result.length} | Total: ${totalCount} | Time: ${queryTime}ms`);
         
-        res.json({
-          data: result,
-          pagination: {
-            currentPage: page,
-            totalPages: Math.min(totalPages, 100), // Max 100 pages
-            totalCount: totalCount,
-            limit: limit,
-            hasNextPage: page < Math.min(totalPages, 100),
-            hasPreviousPage: page > 1
-          },
-          meta: {
-            queryTime: queryTime
-          }
-        });
+        if (forBot) {
+          res.json({
+            data: result,
+            meta: {
+              queryTime: queryTime,
+              totalCount: totalCount
+            }
+          });
+        } else {
+          res.json({
+            data: result,
+            pagination: {
+              currentPage: page,
+              totalPages: Math.min(totalPages, 100), // Max 100 pages
+              totalCount: totalCount,
+              limit: limit,
+              hasNextPage: page < Math.min(totalPages, 100),
+              hasPreviousPage: page > 1
+            },
+            meta: {
+              queryTime: queryTime
+            }
+          });
+        }
       });
     });
   });
 });
 
 // Familias endpoint - return all ARTRUBROS with optional search
-app.get('/familias', (req, res) => {
+app.get('/familias', authenticateAPIKey, (req, res) => {
   const startTime = Date.now();
   const search = req.query.search;
+  const forBot = req.query.forBot === 'true';
 
   // Filter familias by EMP_ID = 2
   const baseWhere = "r.EMP_ID = 2";
@@ -266,7 +322,7 @@ app.get('/familias', (req, res) => {
 
       db.detach();
       
-      console.log(`👥 Familias: "${search || 'all'}" | Results: ${result.length} | Time: ${queryTime}ms`);
+      console.log(`👥 Familias: "${search || 'all'}" | ${forBot ? 'Bot' : 'Web'} | Results: ${result.length} | Time: ${queryTime}ms`);
       
       res.json({
         data: result,
@@ -280,9 +336,10 @@ app.get('/familias', (req, res) => {
   });
 });
 
-app.get('/articles', (req, res) => {
+app.get('/articles', authenticateAPIKey, (req, res) => {
   const startTime = Date.now(); // Performance monitoring
   const search = req.query.search;
+  const forBot = req.query.forBot === 'true';
   const page = parseInt(req.query.page) || 1;
   const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Max 100 rows
   const offset = (page - 1) * limit;
@@ -392,7 +449,7 @@ app.get('/articles', (req, res) => {
     ${applicationJoin}
     WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
     ORDER BY a.ART_ID
-    ROWS ${offset + 1} TO ${offset + limit}
+    ${forBot ? '' : `ROWS ${offset + 1} TO ${offset + limit}`}
   `;
 
   Firebird.attach(dbOptions, (err, db) => {
@@ -420,23 +477,34 @@ app.get('/articles', (req, res) => {
           const endTime = Date.now();
           const queryTime = endTime - startTime;
           
-          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | Results: 0 | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | ${forBot ? 'Bot' : `Page: ${page}`} | Results: 0 | Time: ${queryTime}ms`);
           
-          return res.json({
-            data: [],
-            pagination: {
-              page,
-              limit,
-              total: totalCount,
-              totalPages,
-              hasNext: page < totalPages,
-              hasPrev: page > 1
-            },
-            meta: {
-              queryTime: `${queryTime}ms`,
-              searchWords: words.length
-            }
-          });
+          if (forBot) {
+            return res.json({
+              data: [],
+              meta: {
+                queryTime: `${queryTime}ms`,
+                searchWords: words.length,
+                totalCount: totalCount
+              }
+            });
+          } else {
+            return res.json({
+              data: [],
+              pagination: {
+                page,
+                limit,
+                total: totalCount,
+                totalPages,
+                hasNext: page < totalPages,
+                hasPrev: page > 1
+              },
+              meta: {
+                queryTime: `${queryTime}ms`,
+                searchWords: words.length
+              }
+            });
+          }
         }
 
       const ids = articles.map(a => a.ART_ID).join(',');
@@ -620,41 +688,58 @@ app.get('/articles', (req, res) => {
               debugCounter++;
             }
 
-            return {
+            const articleData = {
               id,
               descripcion: safeTrim(descripcion) || '',
               marca: safeTrim(a.MARCA),
               rubro: safeTrim(a.RUBRO_NOMBRE),
               nota: safeTrim(a.NOTA),
-              aplicaciones,
               precio,
               stock,
               complementarios,
               sustitutos
             };
+
+            // Only include applications if not for bot
+            if (!forBot) {
+              articleData.aplicaciones = aplicaciones;
+            }
+
+            return articleData;
           });
 
           const endTime = Date.now();
           const queryTime = endTime - startTime;
           
           // Log performance for monitoring
-          console.log(`🔍 Search: "${search}" | Words: ${words ? words.length : 0} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | Results: ${result.length} | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words ? words.length : 0} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | ${forBot ? 'Bot' : `Page: ${page}`} | Results: ${result.length} | Time: ${queryTime}ms`);
           
-          return res.json({
-            data: result,
-            pagination: {
-              page,
-              limit,
-              total: totalCount,
-              totalPages,
-              hasNext: page < totalPages,
-              hasPrev: page > 1
-            },
-            meta: {
-              queryTime: `${queryTime}ms`,
-              searchWords: words ? words.length : 0
-            }
-          });
+          if (forBot) {
+            return res.json({
+              data: result,
+              meta: {
+                queryTime: `${queryTime}ms`,
+                searchWords: words ? words.length : 0,
+                totalCount: totalCount
+              }
+            });
+          } else {
+            return res.json({
+              data: result,
+              pagination: {
+                page,
+                limit,
+                total: totalCount,
+                totalPages,
+                hasNext: page < totalPages,
+                hasPrev: page > 1
+              },
+              meta: {
+                queryTime: `${queryTime}ms`,
+                searchWords: words ? words.length : 0
+              }
+            });
+          }
         }
 
       runSequentially();

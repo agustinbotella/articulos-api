@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://192.168.1.106:3000';
+const API_BASE_URL = '/api'; // Use local proxy instead of direct API
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
