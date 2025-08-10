@@ -1033,10 +1033,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             sustitutos
           };
 
-          // Only include applications if not for bot
-          if (!forBot) {
-            articleData.aplicaciones = aplicaciones;
-          }
+          // No aplicaciones field - not needed for this endpoint
 
           return articleData;
         });
