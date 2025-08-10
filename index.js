@@ -120,13 +120,11 @@ app.get('/aplicaciones', authenticateAPIKey, (req, res) => {
       ap.APLIC_ID,
       ap.APLICACION_PATH,
       ap.NOTA_MEMO,
-      aa.NOTA as ART_APLICACION_NOTA,
-      COUNT(DISTINCT aa2.ART_ID) as ARTICLE_COUNT
+      COUNT(DISTINCT aa.ART_ID) as ARTICLE_COUNT
     FROM APLICACIONES ap
     LEFT JOIN ART_APLICACION aa ON ap.APLIC_ID = aa.APLIC_ID
-    LEFT JOIN ART_APLICACION aa2 ON ap.APLIC_ID = aa2.APLIC_ID
     WHERE ${baseWhere} ${searchFilter}
-    GROUP BY ap.APLIC_ID, ap.APLICACION_PATH, ap.NOTA_MEMO, aa.NOTA
+    GROUP BY ap.APLIC_ID, ap.APLICACION_PATH, ap.NOTA_MEMO
     ORDER BY ap.APLICACION_PATH
     ${forBot ? '' : `ROWS ${offset + 1} TO ${offset + limit}`}
   `;
@@ -207,7 +205,6 @@ app.get('/aplicaciones', authenticateAPIKey, (req, res) => {
           id: app.APLIC_ID,
           aplicacion: safeTrim(app.APLICACION_PATH) || '',
           nota: safeTrim(app.NOTA_MEMO),
-          artAplicacionNota: safeTrim(app.ART_APLICACION_NOTA),
           articleCount: app.ARTICLE_COUNT || 0
         }));
 
