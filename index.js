@@ -509,7 +509,10 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           const queries = {
       precios: `SELECT ART_ID, PR_FINAL FROM ARTLPR WHERE LISTA_ID = 7 AND ART_ID IN (${ids})`,
 
-      stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = 12 AND ART_ID IN (${ids})`
+      stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = 12 AND ART_ID IN (${ids})`,
+
+      rels: `SELECT ART_ID, ART_REL_ID, ART_REL_TIPO_ID FROM ART_ART
+             WHERE ART_ID IN (${ids})`
     };
 
       const responses = {};
@@ -517,8 +520,65 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
           const runSequentially = (i = 0) => {
       if (i >= keys.length) {
-        // All queries completed, process results
-        processResults();
+        // Collect all related article IDs
+        const allRelatedIds = new Set();
+        responses.rels.forEach(rel => {
+          allRelatedIds.add(rel.ART_REL_ID);
+        });
+        
+        if (allRelatedIds.size === 0) {
+          // No related articles, proceed with normal processing
+          processResults();
+          return;
+        }
+        
+        // Fetch details for related articles
+        const relatedIdsArray = Array.from(allRelatedIds);
+        const relatedIdsString = relatedIdsArray.join(',');
+        
+        const relatedArticlesQuery = `
+          SELECT 
+            a.ART_ID,
+            TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+                 CASE WHEN (SELECT LIST(aa_desde_rel.DESDE, ', ') 
+                            FROM ART_APLICACION aa_desde_rel 
+                            WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
+                      THEN ' DESDE ' || (SELECT LIST(aa_desde_rel.DESDE, ', ') 
+                                         FROM ART_APLICACION aa_desde_rel 
+                                         WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL)
+                      ELSE '' END ||
+                 CASE WHEN (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
+                            FROM ART_APLICACION aa_hasta_rel 
+                            WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) IS NOT NULL
+                      THEN ' HASTA ' || (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
+                                         FROM ART_APLICACION aa_hasta_rel 
+                                         WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL)
+                      ELSE '' END ||
+                 CASE WHEN (SELECT LIST(aa_rel.NOTA, ', ') 
+                            FROM ART_APLICACION aa_rel 
+                            WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
+                      THEN ' - Nota: ' || (SELECT LIST(aa_rel.NOTA, ', ') 
+                                           FROM ART_APLICACION aa_rel 
+                                           WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
+                      ELSE '' END) AS CALC_DESC_EXTEND,
+            m.MARCA,
+            lp.PR_FINAL as PRECIO,
+            s.EXISTENCIA as STOCK
+          FROM ARTICULOS a
+          LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
+          LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
+          LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12
+          WHERE a.ART_ID IN (${relatedIdsString})
+        `;
+        
+        db.query(relatedArticlesQuery, (err, relatedArticles) => {
+          if (!err && relatedArticles) {
+            responses.relatedArticles = relatedArticles;
+          } else {
+            responses.relatedArticles = [];
+          }
+          processResults();
+        });
         return;
       }
         
@@ -538,13 +598,59 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
         const result = articles.map(a => {
             const id = a.ART_ID;
 
-                            // Remove aplicaciones, complementarios, and sustitutos - not needed for this endpoint
+                            // Remove aplicaciones - not needed for this endpoint, but include complementarios and sustitutos
 
           const precioItem = responses.precios.find(p => p.ART_ID === id);
           const precio = precioItem ? precioItem.PR_FINAL : null;
 
           const stockItem = responses.stock.find(s => s.ART_ID === id);
           const stock = stockItem ? stockItem.EXISTENCIA : null;
+
+          // Process complementarios with full article details
+          const complementarios = responses.rels
+            .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 2)
+            .map(r => {
+              const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
+              if (relatedArticle) {
+                // Convert buffer to string if needed
+                const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
+                  ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
+                  : relatedArticle.CALC_DESC_EXTEND;
+                  
+                return {
+                  id: relatedArticle.ART_ID,
+                  descripcion: safeTrim(relatedDescripcion) || '',
+                  marca: safeTrim(relatedArticle.MARCA),
+                  precio: relatedArticle.PRECIO,
+                  stock: relatedArticle.STOCK
+                };
+              }
+              // Fallback to just ID if details not found
+              return { id: r.ART_REL_ID };
+            });
+
+          // Process sustitutos with full article details  
+          const sustitutos = responses.rels
+            .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 1)
+            .map(r => {
+              const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
+              if (relatedArticle) {
+                // Convert buffer to string if needed
+                const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
+                  ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
+                  : relatedArticle.CALC_DESC_EXTEND;
+                  
+                return {
+                  id: relatedArticle.ART_ID,
+                  descripcion: safeTrim(relatedDescripcion) || '',
+                  marca: safeTrim(relatedArticle.MARCA),
+                  precio: relatedArticle.PRECIO,
+                  stock: relatedArticle.STOCK
+                };
+              }
+              // Fallback to just ID if details not found
+              return { id: r.ART_REL_ID };
+            });
 
             // Convert buffer to string if needed
             const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
@@ -574,7 +680,9 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             rubro: safeTrim(a.RUBRO_NOMBRE),
             nota: safeTrim(a.NOTA),
             precio,
-            stock
+            stock,
+            complementarios,
+            sustitutos
           };
 
           // No aplicaciones field - not needed for this endpoint
