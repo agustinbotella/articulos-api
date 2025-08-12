@@ -871,6 +871,10 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     const responses = {};
     const keys = Object.keys(queries);
 
+    // Initialize response arrays to prevent undefined errors
+    responses.rels = [];
+    responses.relatedArticles = [];
+
     const runSequentially = (i = 0) => {
       if (i >= keys.length) {
         // Collect all related article IDs
@@ -950,14 +954,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
       const result = articles.map(a => {
           const id = a.ART_ID;
 
-          const aplicaciones = responses.aplicaciones
-            .filter(ap => ap.ART_ID === id)
-            .map(ap => ({
-              aplicacion: safeTrim(ap.APLICACION_PATH),
-              nota: safeTrim(ap.NOTA),
-              desde: ap.DESDE,
-              hasta: ap.HASTA
-            }));
+          // Remove aplicaciones - not needed for this endpoint
 
           const precioItem = responses.precios.find(p => p.ART_ID === id);
           const precio = precioItem ? precioItem.PR_FINAL : null;
@@ -966,7 +963,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
           const stock = stockItem ? stockItem.EXISTENCIA : null;
 
           // Process complementarios with full article details
-          const complementarios = responses.rels
+          const complementarios = (responses.rels || [])
             .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 2)
             .map(r => {
               const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
