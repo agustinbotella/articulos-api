@@ -860,11 +860,6 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     const ids = articles.map(a => a.ART_ID).join(',');
 
     const queries = {
-      aplicaciones: `SELECT aa.ART_ID, ap.APLICACION_PATH, aa.NOTA, aa.DESDE, aa.HASTA
-                     FROM ART_APLICACION aa
-                     JOIN APLICACIONES ap ON aa.APLIC_ID = ap.APLIC_ID
-                     WHERE aa.ART_ID IN (${ids})`,
-
       precios: `SELECT ART_ID, PR_FINAL FROM ARTLPR WHERE LISTA_ID = 7 AND ART_ID IN (${ids})`,
 
       stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = 12 AND ART_ID IN (${ids})`,
