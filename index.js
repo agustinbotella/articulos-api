@@ -562,10 +562,12 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                                            WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
                       ELSE '' END) AS CALC_DESC_EXTEND,
             m.MARCA,
+            r.RUBRO_PATH AS RUBRO_NOMBRE,
             lp.PR_FINAL as PRECIO,
             s.EXISTENCIA as STOCK
           FROM ARTICULOS a
           LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
+          LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
           LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
           LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12
           WHERE a.ART_ID IN (${relatedIdsString})
@@ -621,6 +623,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   id: relatedArticle.ART_ID,
                   descripcion: safeTrim(relatedDescripcion) || '',
                   marca: safeTrim(relatedArticle.MARCA),
+                  rubro: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
@@ -644,6 +647,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   id: relatedArticle.ART_ID,
                   descripcion: safeTrim(relatedDescripcion) || '',
                   marca: safeTrim(relatedArticle.MARCA),
+                  rubro: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
@@ -919,10 +923,12 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                                            WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
                       ELSE '' END) AS CALC_DESC_EXTEND,
             m.MARCA,
+            r.RUBRO_PATH AS RUBRO_NOMBRE,
             lp.PR_FINAL as PRECIO,
             s.EXISTENCIA as STOCK
           FROM ARTICULOS a
           LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
+          LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
           LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
           LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12
           WHERE a.ART_ID IN (${relatedIdsString})
@@ -977,6 +983,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   id: relatedArticle.ART_ID,
                   descripcion: safeTrim(relatedDescripcion) || '',
                   marca: safeTrim(relatedArticle.MARCA),
+                  rubro: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
@@ -986,10 +993,10 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             });
 
           // Process sustitutos with full article details  
-          const sustitutos = responses.rels
+          const sustitutos = (responses.rels || [])
             .filter(r => r.ART_ID === id && r.ART_REL_TIPO_ID === 1)
             .map(r => {
-              const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
+              const relatedArticle = (responses.relatedArticles || []).find(ra => ra.ART_ID === r.ART_REL_ID);
               if (relatedArticle) {
                 // Convert buffer to string if needed
                 const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
@@ -1000,6 +1007,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   id: relatedArticle.ART_ID,
                   descripcion: safeTrim(relatedDescripcion) || '',
                   marca: safeTrim(relatedArticle.MARCA),
+                  rubro: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };

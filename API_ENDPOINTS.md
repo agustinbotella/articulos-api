@@ -74,6 +74,7 @@ GET /articles?search=gol power bujia
           "id": 208,
           "descripcion": "Filtro de Aceite",
           "marca": "MANN",
+          "rubro": "FILTROS > ACEITE",
           "precio": 890.50,
           "stock": 15
         }
@@ -83,6 +84,7 @@ GET /articles?search=gol power bujia
           "id": 102,
           "descripcion": "Bujía Gol Power Alternativa",
           "marca": "NGK",
+          "rubro": "ENCENDIDO > BUJIAS",
           "precio": 1100.00,
           "stock": 8
         }
@@ -150,6 +152,7 @@ GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true
           "id": 208,
           "descripcion": "Filtro de Aceite",
           "marca": "MANN",
+          "rubro": "FILTROS > ACEITE",
           "precio": 890.50,
           "stock": 15
         }
@@ -159,6 +162,7 @@ GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true
           "id": 102,
           "descripcion": "Bujía Gol Power Alternativa",
           "marca": "NGK",
+          "rubro": "ENCENDIDO > BUJIAS",
           "precio": 1100.00,
           "stock": 8
         }
