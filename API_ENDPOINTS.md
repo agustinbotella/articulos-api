@@ -144,25 +144,7 @@ GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true
       "rubro": "Encendido",
       "nota": "Producto de alta demanda",
       "precio": 1234.56,
-      "stock": 42,
-      "complementarios": [
-        {
-          "id": 208,
-          "descripcion": "Filtro de Aceite",
-          "marca": "MANN",
-          "precio": 890.50,
-          "stock": 15
-        }
-      ],
-      "sustitutos": [
-        {
-          "id": 102,
-          "descripcion": "Bujía Gol Power Alternativa",
-          "marca": "NGK",
-          "precio": 1100.00,
-          "stock": 8
-        }
-      ]
+      "stock": 42
     }
   ],
   "meta": {
