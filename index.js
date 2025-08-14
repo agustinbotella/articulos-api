@@ -404,6 +404,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
       a.MOD,
       a.MED, 
       a.NOTA,
+      a.DESC_ETIQUETA,
       a.CALC_DESC_EXTEND as ORIGINAL_DESC,
       (SELECT LIST(aa_desde.DESDE, ', ') 
        FROM ART_APLICACION aa_desde 
@@ -683,6 +684,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             marca: safeTrim(a.MARCA),
             rubro: safeTrim(a.RUBRO_NOMBRE),
             nota: safeTrim(a.NOTA),
+            detalle: safeTrim(a.DESC_ETIQUETA) || null,
             precio,
             stock,
             complementarios,
@@ -790,6 +792,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
       a.MOD,
       a.MED, 
       a.NOTA,
+      a.DESC_ETIQUETA,
       a.CALC_DESC_EXTEND as ORIGINAL_DESC,
       (SELECT LIST(aa_desde.DESDE, ', ') 
        FROM ART_APLICACION aa_desde 
@@ -1027,6 +1030,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             marca: safeTrim(a.MARCA),
             rubro: safeTrim(a.RUBRO_NOMBRE),
             nota: safeTrim(a.NOTA),
+            detalle: safeTrim(a.DESC_ETIQUETA) || null,
             precio,
             stock,
             complementarios,
