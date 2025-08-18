@@ -76,6 +76,10 @@ const dbOptions = {
 
 // Utility function to safely trim database strings
 function safeTrim(value) {
+  // Handle Buffer objects (common in Firebird)
+  if (value instanceof Buffer) {
+    value = value.toString('utf8');
+  }
   return value && typeof value === 'string' ? value.trim() : null;
 }
 
@@ -217,12 +221,19 @@ app.get('/aplicaciones', authenticateAPIKey, (req, res) => {
         }
 
         // Process results and safely trim strings
-        const result = aplicaciones.map(app => ({
-          id: app.APLIC_ID,
-          aplicacion: safeTrim(app.APLICACION_PATH) || '',
-          nota: safeTrim(app.NOTA_MEMO),
-          articleCount: app.ARTICLE_COUNT || 0
-        }));
+        const result = aplicaciones.map(app => {
+          // Debug: Check if NOTA_MEMO is a Buffer
+          if (app.NOTA_MEMO && app.NOTA_MEMO instanceof Buffer) {
+            console.log(`🔍 NOTA_MEMO is Buffer for APLIC_ID ${app.APLIC_ID}:`, app.NOTA_MEMO.toString('utf8'));
+          }
+          
+          return {
+            id: app.APLIC_ID,
+            aplicacion: safeTrim(app.APLICACION_PATH) || '',
+            nota: safeTrim(app.NOTA_MEMO),
+            articleCount: app.ARTICLE_COUNT || 0
+          };
+        });
 
         db.detach();
         
