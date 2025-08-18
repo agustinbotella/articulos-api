@@ -733,13 +733,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             articleData.años = años;
           }
 
-          // Add remaining fields
-          articleData.precio = precio;
-          articleData.stock = stock;
-          articleData.complementarios = complementarios;
-          articleData.sustitutos = sustitutos;
-
-          // Only include nota if it has a value
+          // Only include nota if it has a value (after años)
           // Convert buffer to string if needed
           let rawNota = a.ART_APLICACION_NOTAS;
           if (rawNota instanceof Buffer) {
@@ -750,6 +744,12 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           if (nota && nota.trim() !== '') {
             articleData.nota = nota;
           }
+
+          // Add remaining fields
+          articleData.precio = precio;
+          articleData.stock = stock;
+          articleData.complementarios = complementarios;
+          articleData.sustitutos = sustitutos;
 
 
 
