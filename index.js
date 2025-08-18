@@ -5,6 +5,22 @@ require('dotenv').config();
 const app = express();
 const PORT = 3000;
 
+// Validate required environment variables
+const EMP_ID = process.env.EMP_ID;
+const DEP_ID = process.env.DEP_ID;
+
+if (!EMP_ID) {
+  console.error('❌ EMP_ID environment variable is required');
+  process.exit(1);
+}
+
+if (!DEP_ID) {
+  console.error('❌ DEP_ID environment variable is required');
+  process.exit(1);
+}
+
+console.log(`✅ Using EMP_ID: ${EMP_ID}, DEP_ID: ${DEP_ID}`);
+
 // CORS middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -74,8 +90,8 @@ app.get('/aplicaciones', authenticateAPIKey, (req, res) => {
   const search = req.query.search;
   const forBot = req.query.forBot === 'true';
 
-  // Filter aplicaciones by EMP_ID = 2
-  const baseWhere = "ap.EMP_ID = 2";
+  // Filter aplicaciones by EMP_ID
+  const baseWhere = `ap.EMP_ID = ${EMP_ID}`;
   
   // Require search parameter
   if (!search || search.trim() === '') {
@@ -247,8 +263,8 @@ app.get('/familias', authenticateAPIKey, (req, res) => {
   const search = req.query.search;
   const forBot = req.query.forBot === 'true';
 
-  // Filter familias by EMP_ID = 2
-  const baseWhere = "r.EMP_ID = 2";
+  // Filter familias by EMP_ID
+  const baseWhere = `r.EMP_ID = ${EMP_ID}`;
   
   // Create search filter for RUBRO_PATH
   let searchFilter = "";
@@ -361,7 +377,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
     });
   }
   
-  const baseWhere = "a.EMP_ID = 2";
+  const baseWhere = `a.EMP_ID = ${EMP_ID}`;
   
   // Create search filter for articulo (RUBRO_PATH)
   let searchFilter = "";
@@ -384,14 +400,14 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
   const stockFilter = onlyWithStock 
     ? `AND (s.EXISTENCIA > 0 OR EXISTS (
         SELECT 1 FROM ART_ART aa_stock 
-        INNER JOIN STOCK s_sub ON aa_stock.ART_REL_ID = s_sub.ART_ID AND s_sub.DEP_ID = 12 
+        INNER JOIN STOCK s_sub ON aa_stock.ART_REL_ID = s_sub.ART_ID AND s_sub.DEP_ID = ${DEP_ID} 
         WHERE aa_stock.ART_ID = a.ART_ID AND aa_stock.ART_REL_TIPO_ID = 1 AND s_sub.EXISTENCIA > 0
       ))` 
     : "";
   
   // Determine if we need to join STOCK table
   const stockJoin = onlyWithStock 
-    ? "LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12" 
+    ? `LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = ${DEP_ID}` 
     : "";
 
   // Create application filter for multiple IDs (only if applicationIds provided)
@@ -472,7 +488,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           const queries = {
       precios: `SELECT ART_ID, PR_FINAL FROM ARTLPR WHERE LISTA_ID = 7 AND ART_ID IN (${ids})`,
 
-      stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = 12 AND ART_ID IN (${ids})`,
+      stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = ${DEP_ID} AND ART_ID IN (${ids})`,
 
       rels: `SELECT ART_ID, ART_REL_ID, ART_REL_TIPO_ID FROM ART_ART
              WHERE ART_ID IN (${ids})`
@@ -536,7 +552,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
           LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
           LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
-          LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12
+          LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = ${DEP_ID}
           WHERE a.ART_ID IN (${relatedIdsString})
         `;
         
@@ -785,8 +801,8 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
   const search = req.query.search;
   const forBot = req.query.forBot === 'true';
 
-  // Filter rubros by EMP_ID = 2
-  const baseWhere = "r.EMP_ID = 2";
+  // Filter rubros by EMP_ID
+  const baseWhere = `r.EMP_ID = ${EMP_ID}`;
   
   // Create search filter for RUBRO_PATH and RUBRO
   let searchFilter = "";
@@ -818,7 +834,7 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
       r.NOTA_MEMO,
       COUNT(a.ART_ID) as ARTICLE_COUNT
     FROM ARTRUBROS r
-    LEFT JOIN ARTICULOS a ON r.RUBRO_ID = a.RUBRO_ID AND a.EMP_ID = 2
+    LEFT JOIN ARTICULOS a ON r.RUBRO_ID = a.RUBRO_ID AND a.EMP_ID = ${EMP_ID}
     WHERE ${baseWhere} ${searchFilter}
     GROUP BY r.RUBRO_ID, r.EMP_ID, r.RUBRO_PADRE_ID, r.RUBRO, r.RUBRO_PATH, r.IMAGEN, r.NOTA, r.NOTA_MEMO
     ORDER BY r.RUBRO_PATH

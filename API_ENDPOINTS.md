@@ -251,7 +251,7 @@ GET /familias?search=encendido
 
 **Response Fields:**
 - `id`: Rubro ID (RUBRO_ID)
-- `empId`: Company ID (EMP_ID) - always 2
+- `empId`: Company ID (EMP_ID) - configured via environment variable
 - `rubroPadreId`: Parent rubro ID (RUBRO_PADRE_ID) - null for root categories
 - `rubro`: Rubro name (RUBRO)
 - `rubroPath`: Full hierarchical path (RUBRO_PATH)
@@ -323,6 +323,11 @@ GET /rubros?search=encendido
 - **Host:** 192.168.1.30
 - **Database:** `/var/lib/firebird/3.0/data/DBSIF.FDB`
 - **User:** LECTURA (read-only access)
+
+### Environment Variables Required
+- `APIKEY`: API authentication key
+- `EMP_ID`: Company ID filter (e.g., "2")
+- `DEP_ID`: Department/warehouse ID for stock queries (e.g., "12")
 
 ### Performance Features
 - **Query timing:** All endpoints include execution time in response
