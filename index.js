@@ -593,7 +593,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                             // Remove aplicaciones - not needed for this endpoint, but include complementarios and sustitutos
 
           const precioItem = responses.precios.find(p => p.ART_ID === id);
-          const precio = precioItem ? precioItem.PR_FINAL : null;
+          const precio = precioItem ? Math.floor(precioItem.PR_FINAL) : null;
 
           const stockItem = responses.stock.find(s => s.ART_ID === id);
           let stock = stockItem ? stockItem.EXISTENCIA : null;
@@ -619,15 +619,11 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   descripcion: safeTrim(relatedDescripcion) || '',
                   medida: null,
                   años: null,
-                  precio: relatedArticle.PRECIO,
+                  precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK
                 };
 
-                // Only include detalle if it has a value
-                const detalle = safeTrim(relatedArticle.DESC_ETIQUETA);
-                if (detalle) {
-                  complementarioData.detalle = detalle;
-                }
+
 
                 return complementarioData;
               }
@@ -656,15 +652,11 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   descripcion: safeTrim(relatedDescripcion) || '',
                   medida: null,
                   años: null,
-                  precio: relatedArticle.PRECIO,
+                  precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK
                 };
 
-                // Only include detalle if it has a value
-                const detalle = safeTrim(relatedArticle.DESC_ETIQUETA);
-                if (detalle) {
-                  sustitutoData.detalle = detalle;
-                }
+
 
                 return sustitutoData;
               }
@@ -765,11 +757,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             articleData.nota = nota;
           }
 
-          // Only include detalle if it has a value
-          const detalle = safeTrim(a.DESC_ETIQUETA);
-          if (detalle && detalle.trim() !== '') {
-            articleData.detalle = detalle;
-          }
+
 
           // No aplicaciones field - not needed for this endpoint
 
@@ -1058,7 +1046,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
           // Remove aplicaciones - not needed for this endpoint
 
           const precioItem = responses.precios.find(p => p.ART_ID === id);
-          const precio = precioItem ? precioItem.PR_FINAL : null;
+          const precio = precioItem ? Math.floor(precioItem.PR_FINAL) : null;
 
           const stockItem = responses.stock.find(s => s.ART_ID === id);
           let stock = stockItem ? stockItem.EXISTENCIA : null;
@@ -1084,15 +1072,11 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   descripcion: safeTrim(relatedDescripcion) || '',
                   medida: null,
                   años: null,
-                  precio: relatedArticle.PRECIO,
+                  precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK
                 };
 
-                // Only include detalle if it has a value
-                const detalle = safeTrim(relatedArticle.DESC_ETIQUETA);
-                if (detalle) {
-                  complementarioData.detalle = detalle;
-                }
+
 
                 return complementarioData;
               }
@@ -1121,15 +1105,11 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   descripcion: safeTrim(relatedDescripcion) || '',
                   medida: null,
                   años: null,
-                  precio: relatedArticle.PRECIO,
+                  precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK
                 };
 
-                // Only include detalle if it has a value
-                const detalle = safeTrim(relatedArticle.DESC_ETIQUETA);
-                if (detalle) {
-                  sustitutoData.detalle = detalle;
-                }
+
 
                 return sustitutoData;
               }
@@ -1214,11 +1194,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             articleData.nota = nota;
           }
 
-          // Only include detalle if it has a value
-          const detalle = safeTrim(a.DESC_ETIQUETA);
-          if (detalle && detalle.trim() !== '') {
-            articleData.detalle = detalle;
-          }
+
 
           // No aplicaciones field - not needed for this endpoint
 
