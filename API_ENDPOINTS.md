@@ -4,6 +4,8 @@ Base URL: `http://192.168.1.106:3000`
 
 ## 📋 Available Endpoints
 
+Total: 6 endpoints
+
 ### 1. Health Check
 **GET** `/`
 
@@ -27,6 +29,7 @@ Search for articles with pagination, filtering, and full relationship data.
 - `limit` (integer, optional): Results per page (default: 20, max: 100)
 - `onlyWithStock` (boolean, optional): Filter only articles with stock (default: false)
 - `applicationId` (integer, optional): Filter articles by specific application ID
+- `rubroId` (integer, optional): Filter articles by specific rubro ID
 
 **Example Requests:**
 ```bash
@@ -42,8 +45,11 @@ GET /articles?search=bujia&onlyWithStock=true
 # Filter by specific application
 GET /articles?search=bujia&applicationId=365
 
+# Filter by specific rubro
+GET /articles?search=bujia&rubroId=45
+
 # Combined filters
-GET /articles?search=motor&onlyWithStock=true&applicationId=365&limit=50
+GET /articles?search=motor&onlyWithStock=true&applicationId=365&rubroId=45&limit=50
 
 # Word-based search (order doesn't matter)
 GET /articles?search=gol power bujia
@@ -55,26 +61,23 @@ GET /articles?search=gol power bujia
   "data": [
     {
       "id": 61085,
+      "articulo": "Encendido",
+      "marca": "BOSCH", 
       "descripcion": "Bujía Gol Power",
-      "marca": "BOSCH",
-      "rubro": "Encendido",
+      "medida": "14mm",
+      "años": "Desde: 2018 - Hasta: 2020",
       "nota": "Producto de alta demanda",
+      "detalle": "Bujía de alta performance",
       "precio": 1234.56,
       "stock": 42,
-      "aplicaciones": [
-        {
-          "aplicacion": "MOTORES > VW > 1.6 8V",
-          "nota": null,
-          "desde": "2018-01-01",
-          "hasta": "2020-01-01"
-        }
-      ],
       "complementarios": [
         {
           "id": 208,
-          "descripcion": "Filtro de Aceite",
+          "articulo": "FILTROS > ACEITE",
           "marca": "MANN",
-          "rubro": "FILTROS > ACEITE",
+          "descripcion": "Filtro de Aceite",
+          "medida": null,
+          "años": null,
           "precio": 890.50,
           "stock": 15
         }
@@ -82,9 +85,11 @@ GET /articles?search=gol power bujia
       "sustitutos": [
         {
           "id": 102,
-          "descripcion": "Bujía Gol Power Alternativa",
+          "articulo": "ENCENDIDO > BUJIAS",
           "marca": "NGK",
-          "rubro": "ENCENDIDO > BUJIAS",
+          "descripcion": "Bujía Gol Power Alternativa",
+          "medida": null,
+          "años": null,
           "precio": 1100.00,
           "stock": 8
         }
@@ -116,9 +121,11 @@ Retrieve all articles that belong to specific application IDs. This endpoint req
 **Parameters:**
 - `applicationId` (integer, optional): Single application ID to filter by
 - `applicationIds` (string/array, optional): Multiple application IDs (comma-separated string or array)
+- `search` (string, optional): Search term - supports word-based search across articulo (RUBRO_PATH)
+- `rubroId` (integer, optional): Filter articles by specific rubro ID
 - `onlyWithStock` (boolean, optional): Filter only articles with stock (default: false)
 
-**Note:** Either `applicationId` or `applicationIds` must be provided. If neither is provided, the endpoint returns a 400 error.
+**Note:** At least one of `applicationId`, `applicationIds`, `search`, or `rubroId` must be provided. If none are provided, the endpoint returns a 400 error.
 
 **Example Requests:**
 ```bash
@@ -131,8 +138,14 @@ GET /articles/by-applications?applicationIds=365,421,508
 # With stock filter
 GET /articles/by-applications?applicationIds=365,421&onlyWithStock=true
 
+# Search only (no application IDs needed)
+GET /articles/by-applications?search=FILTROS
+
+# Filter by rubro only
+GET /articles/by-applications?rubroId=45
+
 # Combined filters
-GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true
+GET /articles/by-applications?applicationIds=365,421&search=MOTOR&rubroId=45&onlyWithStock=true
 ```
 
 **Response Format:**
@@ -141,18 +154,23 @@ GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true
   "data": [
     {
       "id": 61085,
+      "articulo": "Encendido",
+      "marca": "BOSCH", 
       "descripcion": "Bujía Gol Power",
-      "marca": "BOSCH",
-      "rubro": "Encendido",
+      "medida": "14mm",
+      "años": "Desde: 2018 - Hasta: 2020",
       "nota": "Producto de alta demanda",
+      "detalle": "Bujía de alta performance",
       "precio": 1234.56,
       "stock": 42,
       "complementarios": [
         {
           "id": 208,
-          "descripcion": "Filtro de Aceite",
+          "articulo": "FILTROS > ACEITE",
           "marca": "MANN",
-          "rubro": "FILTROS > ACEITE",
+          "descripcion": "Filtro de Aceite",
+          "medida": null,
+          "años": null,
           "precio": 890.50,
           "stock": 15
         }
@@ -160,9 +178,11 @@ GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true
       "sustitutos": [
         {
           "id": 102,
-          "descripcion": "Bujía Gol Power Alternativa",
+          "articulo": "ENCENDIDO > BUJIAS",
           "marca": "NGK",
-          "rubro": "ENCENDIDO > BUJIAS",
+          "descripcion": "Bujía Gol Power Alternativa",
+          "medida": null,
+          "años": null,
           "precio": 1100.00,
           "stock": 8
         }
@@ -177,11 +197,11 @@ GET /articles/by-applications?applicationIds=365,421,508&onlyWithStock=true
 }
 ```
 
-**Error Response (when no application IDs provided):**
+**Error Response (when no parameters provided):**
 ```json
 {
-  "error": "Application IDs required",
-  "message": "Please provide either applicationId (single) or applicationIds (array) parameter"
+  "error": "Application IDs, search, or rubroId required",
+  "message": "Please provide applicationId/applicationIds parameter, search parameter, or rubroId parameter"
 }
 ```
 
@@ -321,6 +341,58 @@ GET /familias?search=encendido
 
 ---
 
+### 6. Get Rubros
+**GET** `/rubros`
+
+Returns all rubros/categories from the ARTRUBROS table with optional search functionality and article counts. No pagination is applied - returns all matching results.
+
+**Parameters:**
+- `search` (string, optional): Search term - supports word-based search across both RUBRO and RUBRO_PATH fields
+
+**Example Requests:**
+```bash
+# Get all rubros
+GET /rubros
+
+# Search for specific rubros
+GET /rubros?search=motor
+GET /rubros?search=filtro aceite
+GET /rubros?search=encendido
+```
+
+**Response Format:**
+```json
+{
+  "data": [
+    {
+      "rubro": "FILTROS",
+      "rubroPath": "LUBRICACION > FILTROS > ACEITE",
+      "nota": "Filtros de alta calidad",
+      "notaMemo": "Verificar compatibilidad antes de la instalación"
+    },
+    {
+      "rubro": "MOTOR",
+      "rubroPath": "MOTOR"
+    }
+  ],
+  "meta": {
+    "queryTime": 25,
+    "totalCount": 156,
+    "searchTerm": "motor"
+  }
+}
+```
+
+**Response Fields:**
+- `rubro`: Rubro name (RUBRO)
+- `rubroPath`: Full hierarchical path (RUBRO_PATH)
+- `nota`: Short note (NOTA) - only included if has value
+- `notaMemo`: Extended notes (NOTA_MEMO) - only included if has value
+
+**Note:** The `nota` and `notaMemo` fields are only included in the response when they have actual values (not null or empty).
+
+---
+
 ## 🔧 Technical Details
 
 ### Database Configuration
@@ -400,6 +472,10 @@ curl "http://192.168.1.106:3000/aplicaciones?search=motor"
 curl http://192.168.1.106:3000/familias
 curl "http://192.168.1.106:3000/familias?search=filtro"
 
+# Test rubros endpoint
+curl http://192.168.1.106:3000/rubros
+curl "http://192.168.1.106:3000/rubros?search=motor"
+
 # Test articles search
 curl "http://192.168.1.106:3000/articles?search=bujia"
 
@@ -407,9 +483,12 @@ curl "http://192.168.1.106:3000/articles?search=bujia"
 curl "http://192.168.1.106:3000/articles/by-applications?applicationId=365"
 curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365,421,508"
 
+# Test articles by-applications with search
+curl "http://192.168.1.106:3000/articles/by-applications?search=FILTROS"
+
 # Test with filters
-curl "http://192.168.1.106:3000/articles?search=bujia&onlyWithStock=true&limit=10"
-curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365&onlyWithStock=true"
+curl "http://192.168.1.106:3000/articles?search=bujia&onlyWithStock=true&rubroId=45&limit=10"
+curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365&search=MOTOR&rubroId=45&onlyWithStock=true"
 ```
 
 ### Load Testing

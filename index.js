@@ -342,6 +342,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
   const offset = (page - 1) * limit;
   const onlyWithStock = req.query.onlyWithStock === 'true'; // Stock filter
   const applicationId = req.query.applicationId ? parseInt(req.query.applicationId) : null; // Application filter
+  const rubroId = req.query.rubroId ? parseInt(req.query.rubroId) : null; // Rubro filter
   
   const baseWhere = "a.EMP_ID = 2";
   
@@ -385,6 +386,11 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
     ? `AND aa.APLIC_ID = ${applicationId}` 
     : "";
 
+  // Add rubro filter to WHERE clause if needed
+  const rubroFilter = rubroId 
+    ? `AND a.RUBRO_ID = ${rubroId}` 
+    : "";
+
   // Count query for total records
   const countSql = `
     SELECT COUNT(DISTINCT a.ART_ID) as TOTAL_COUNT
@@ -394,7 +400,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
     ${applicationJoin}
-    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter} ${rubroFilter}
   `;
 
   // Main query with pagination
@@ -445,7 +451,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
     ${applicationJoin}
-    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter} ${rubroFilter}
     ORDER BY a.ART_ID
     ${forBot ? '' : `ROWS ${offset + 1} TO ${offset + limit}`}
   `;
@@ -475,7 +481,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           const endTime = Date.now();
           const queryTime = endTime - startTime;
           
-          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | ${forBot ? 'Bot' : `Page: ${page}`} | Results: 0 | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words.length} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | Rubro Filter: ${rubroId || 'none'} | ${forBot ? 'Bot' : `Page: ${page}`} | Results: 0 | Time: ${queryTime}ms`);
           
           if (forBot) {
             return res.json({
@@ -759,7 +765,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           const queryTime = endTime - startTime;
           
           // Log performance for monitoring
-          console.log(`🔍 Search: "${search}" | Words: ${words ? words.length : 0} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | ${forBot ? 'Bot' : `Page: ${page}`} | Results: ${result.length} | Time: ${queryTime}ms`);
+          console.log(`🔍 Search: "${search}" | Words: ${words ? words.length : 0} | Stock Filter: ${onlyWithStock} | App Filter: ${applicationId || 'none'} | Rubro Filter: ${rubroId || 'none'} | ${forBot ? 'Bot' : `Page: ${page}`} | Results: ${result.length} | Time: ${queryTime}ms`);
           
           if (forBot) {
             return res.json({
@@ -797,10 +803,10 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
 // New endpoint: Get articles by application IDs
 app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
-  console.log('🚀 /articles/by-applications endpoint called');
   const startTime = Date.now(); // Performance monitoring
   const onlyWithStock = req.query.onlyWithStock === 'true'; // Stock filter
   const search = req.query.search; // Add search parameter
+  const rubroId = req.query.rubroId ? parseInt(req.query.rubroId) : null; // Rubro filter
   
   // Parse application IDs - support both single applicationId and array applicationIds
   let applicationIds = [];
@@ -821,11 +827,11 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     }
   }
   
-  // Make application IDs optional if search is provided
-  if ((!applicationIds || applicationIds.length === 0) && !search) {
+  // Make application IDs optional if search or rubroId is provided
+  if ((!applicationIds || applicationIds.length === 0) && !search && !rubroId) {
     return res.status(400).json({
-      error: 'Application IDs or search required',
-      message: 'Please provide either applicationId/applicationIds parameter or search parameter'
+      error: 'Application IDs, search, or rubroId required',
+      message: 'Please provide applicationId/applicationIds parameter, search parameter, or rubroId parameter'
     });
   }
   
@@ -867,6 +873,11 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     applicationJoin = "INNER JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID";
     applicationFilter = `AND aa.APLIC_ID IN (${applicationIdsString})`;
   }
+
+  // Add rubro filter to WHERE clause if needed
+  const rubroFilter = rubroId 
+    ? `AND a.RUBRO_ID = ${rubroId}` 
+    : "";
 
   // Main query without pagination - return all results
   const sql = `
@@ -916,7 +927,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
     ${applicationJoin}
-    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter} ${rubroFilter}
     ORDER BY a.ART_ID
   `;
 
@@ -935,7 +946,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
         const endTime = Date.now();
         const queryTime = endTime - startTime;
         
-        console.log(`🎯 By-Applications: Search: "${search || 'none'}" | App IDs: [${applicationIds.join(',') || 'none'}] | Stock Filter: ${onlyWithStock} | Results: 0 | Time: ${queryTime}ms`);
+        console.log(`🎯 By-Applications: Search: "${search || 'none'}" | App IDs: [${applicationIds.join(',') || 'none'}] | Rubro Filter: ${rubroId || 'none'} | Stock Filter: ${onlyWithStock} | Results: 0 | Time: ${queryTime}ms`);
         
         return res.json({
           data: [],
@@ -1134,18 +1145,6 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
           const desde = safeTrim(rawDesde);
           const hasta = safeTrim(rawHasta);
           
-          // Debug logging for articles
-          console.log(`🔍 DEBUG By-App Article ${id} AÑOS:`, {
-            ART_APLICACION_DESDE: desde,
-            ART_APLICACION_HASTA: hasta,
-            desde_type: typeof desde,
-            hasta_type: typeof hasta,
-            raw_desde: a.ART_APLICACION_DESDE,
-            raw_hasta: a.ART_APLICACION_HASTA,
-            converted_desde: rawDesde,
-            converted_hasta: rawHasta
-          });
-          
           if (desde || hasta) {
             // Parse comma-separated dates and extract years
             let desdeYear = '';
@@ -1200,7 +1199,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
         const queryTime = endTime - startTime;
         
         // Log performance for monitoring
-        console.log(`🎯 By-Applications: Search: "${search || 'none'}" | App IDs: [${applicationIds.join(',') || 'none'}] | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
+        console.log(`🎯 By-Applications: Search: "${search || 'none'}" | App IDs: [${applicationIds.join(',') || 'none'}] | Rubro Filter: ${rubroId || 'none'} | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
         
         return res.json({
           data: result,
