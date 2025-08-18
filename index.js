@@ -848,10 +848,10 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
           rubroPath: safeTrim(rubro.RUBRO_PATH) || ''
         };
         
-        // Only include nota if it has a value (not null and not empty)
-        const nota = safeTrim(rubro.NOTA);
-        if (nota && nota.trim() !== '') {
-          item.nota = nota;
+        // Only include otrosNombres if it has a value (not null and not empty)
+        const otrosNombres = safeTrim(rubro.NOTA);
+        if (otrosNombres && otrosNombres.trim() !== '') {
+          item.otrosNombres = otrosNombres;
         }
         
         // Only include notaMemo if it has a value (not null and not empty)

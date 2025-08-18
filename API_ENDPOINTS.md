@@ -288,7 +288,7 @@ GET /rubros?search=encendido
       "id": 45,
       "rubro": "FILTROS",
       "rubroPath": "LUBRICACION > FILTROS > ACEITE",
-      "nota": "Filtros de alta calidad",
+      "otrosNombres": "Filtros de alta calidad",
       "notaMemo": "Verificar compatibilidad antes de la instalación"
     },
     {
@@ -309,10 +309,10 @@ GET /rubros?search=encendido
 - `id`: Rubro ID (RUBRO_ID)
 - `rubro`: Rubro name (RUBRO)
 - `rubroPath`: Full hierarchical path (RUBRO_PATH)
-- `nota`: Short note (NOTA) - only included if has value
+- `otrosNombres`: Alternative names or descriptions (NOTA) - only included if has value
 - `notaMemo`: Extended notes (NOTA_MEMO) - only included if has value
 
-**Note:** The `nota` and `notaMemo` fields are only included in the response when they have actual values (not null or empty).
+**Note:** The `otrosNombres` and `notaMemo` fields are only included in the response when they have actual values (not null or empty).
 
 ---
 
