@@ -415,7 +415,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
       (SELECT LIST(aa_nota.NOTA, ', ') 
        FROM ART_APLICACION aa_nota 
        WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
-      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+      TRIM(COALESCE(a.MED, '') ||
            CASE WHEN (SELECT LIST(aa_desde.DESDE, ', ') 
                       FROM ART_APLICACION aa_desde 
                       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
@@ -622,9 +622,9 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   
                 return {
                   id: relatedArticle.ART_ID,
-                  descripcion: safeTrim(relatedDescripcion) || '',
+                  articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
-                  rubro: safeTrim(relatedArticle.RUBRO_NOMBRE),
+                  descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
@@ -646,9 +646,9 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   
                 return {
                   id: relatedArticle.ART_ID,
-                  descripcion: safeTrim(relatedDescripcion) || '',
+                  articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
-                  rubro: safeTrim(relatedArticle.RUBRO_NOMBRE),
+                  descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
@@ -680,9 +680,9 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
                       const articleData = {
             id,
-            descripcion: safeTrim(descripcion) || '',
+            articulo: safeTrim(a.RUBRO_NOMBRE),
             marca: safeTrim(a.MARCA),
-            rubro: safeTrim(a.RUBRO_NOMBRE),
+            descripcion: safeTrim(descripcion) || '',
             nota: safeTrim(a.NOTA),
             detalle: safeTrim(a.DESC_ETIQUETA) || null,
             precio,
@@ -803,7 +803,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
       (SELECT LIST(aa_nota.NOTA, ', ') 
        FROM ART_APLICACION aa_nota 
        WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
-      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+      TRIM(COALESCE(a.MED, '') ||
            CASE WHEN (SELECT LIST(aa_desde.DESDE, ', ') 
                       FROM ART_APLICACION aa_desde 
                       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
@@ -984,9 +984,9 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   
                 return {
                   id: relatedArticle.ART_ID,
-                  descripcion: safeTrim(relatedDescripcion) || '',
+                  articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
-                  rubro: safeTrim(relatedArticle.RUBRO_NOMBRE),
+                  descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
@@ -1008,9 +1008,9 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   
                 return {
                   id: relatedArticle.ART_ID,
-                  descripcion: safeTrim(relatedDescripcion) || '',
+                  articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
-                  rubro: safeTrim(relatedArticle.RUBRO_NOMBRE),
+                  descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
@@ -1026,9 +1026,9 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
 
           const articleData = {
             id,
-            descripcion: safeTrim(descripcion) || '',
+            articulo: safeTrim(a.RUBRO_NOMBRE),
             marca: safeTrim(a.MARCA),
-            rubro: safeTrim(a.RUBRO_NOMBRE),
+            descripcion: safeTrim(descripcion) || '',
             nota: safeTrim(a.NOTA),
             detalle: safeTrim(a.DESC_ETIQUETA) || null,
             precio,
