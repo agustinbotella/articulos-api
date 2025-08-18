@@ -222,17 +222,19 @@ app.get('/aplicaciones', authenticateAPIKey, (req, res) => {
 
         // Process results and safely trim strings
         const result = aplicaciones.map(app => {
-          // Debug: Check if NOTA_MEMO is a Buffer
-          if (app.NOTA_MEMO && app.NOTA_MEMO instanceof Buffer) {
-            console.log(`🔍 NOTA_MEMO is Buffer for APLIC_ID ${app.APLIC_ID}:`, app.NOTA_MEMO.toString('utf8'));
-          }
-          
-          return {
+          const item = {
             id: app.APLIC_ID,
             aplicacion: safeTrim(app.APLICACION_PATH) || '',
-            nota: safeTrim(app.NOTA_MEMO),
             articleCount: app.ARTICLE_COUNT || 0
           };
+          
+          // Only include nota if it has a value
+          const nota = safeTrim(app.NOTA_MEMO);
+          if (nota && nota.trim() !== '') {
+            item.nota = nota;
+          }
+          
+          return item;
         });
 
         db.detach();
