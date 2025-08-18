@@ -788,6 +788,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
   console.log('🚀 /articles/by-applications endpoint called');
   const startTime = Date.now(); // Performance monitoring
   const onlyWithStock = req.query.onlyWithStock === 'true'; // Stock filter
+  const search = req.query.search; // Add search parameter
   
   // Parse application IDs - support both single applicationId and array applicationIds
   let applicationIds = [];
@@ -808,15 +809,32 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     }
   }
   
-  // Validate that application IDs are provided
-  if (!applicationIds || applicationIds.length === 0) {
+  // Make application IDs optional if search is provided
+  if ((!applicationIds || applicationIds.length === 0) && !search) {
     return res.status(400).json({
-      error: 'Application IDs required',
-      message: 'Please provide either applicationId (single) or applicationIds (array) parameter'
+      error: 'Application IDs or search required',
+      message: 'Please provide either applicationId/applicationIds parameter or search parameter'
     });
   }
   
   const baseWhere = "a.EMP_ID = 2";
+  
+  // Create search filter for articulo (RUBRO_PATH)
+  let searchFilter = "";
+  if (search && search.trim() !== '') {
+    const words = search.trim().split(/\s+/)
+      .filter(word => word.length > 0)
+      .slice(0, 5); // Limit to 5 words max for performance
+    
+    if (words.length > 0) {
+      const wordConditions = words.map(word => {
+        const cleanWord = word.replace(/'/g, "''").toUpperCase();
+        return `UPPER(r.RUBRO_PATH) LIKE '%${cleanWord}%'`;
+      });
+      
+      searchFilter = `AND (${wordConditions.join(' AND ')})`;
+    }
+  }
   
   // Add stock filter to WHERE clause if needed
   const stockFilter = onlyWithStock 
@@ -828,10 +846,15 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     ? "LEFT JOIN STOCK s ON a.ART_ID = s.ART_ID AND s.DEP_ID = 12" 
     : "";
 
-  // Create application filter for multiple IDs
-  const applicationIdsString = applicationIds.join(',');
-  const applicationJoin = "INNER JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID";
-  const applicationFilter = `AND aa.APLIC_ID IN (${applicationIdsString})`;
+  // Create application filter for multiple IDs (only if applicationIds provided)
+  let applicationJoin = "";
+  let applicationFilter = "";
+  
+  if (applicationIds && applicationIds.length > 0) {
+    const applicationIdsString = applicationIds.join(',');
+    applicationJoin = "INNER JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID";
+    applicationFilter = `AND aa.APLIC_ID IN (${applicationIdsString})`;
+  }
 
   // Main query without pagination - return all results
   const sql = `
@@ -881,7 +904,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
     ${applicationJoin}
-    WHERE ${baseWhere} ${stockFilter} ${applicationFilter}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
     ORDER BY a.ART_ID
   `;
 
@@ -900,7 +923,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
         const endTime = Date.now();
         const queryTime = endTime - startTime;
         
-        console.log(`🎯 By-Applications: App IDs: [${applicationIdsString}] | Stock Filter: ${onlyWithStock} | Results: 0 | Time: ${queryTime}ms`);
+        console.log(`🎯 By-Applications: Search: "${search || 'none'}" | App IDs: [${applicationIds.join(',') || 'none'}] | Stock Filter: ${onlyWithStock} | Results: 0 | Time: ${queryTime}ms`);
         
         return res.json({
           data: [],
@@ -1151,7 +1174,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
         const queryTime = endTime - startTime;
         
         // Log performance for monitoring
-        console.log(`🎯 By-Applications: App IDs: [${applicationIdsString}] | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
+        console.log(`🎯 By-Applications: Search: "${search || 'none'}" | App IDs: [${applicationIds.join(',') || 'none'}] | Stock Filter: ${onlyWithStock} | Results: ${result.length} | Time: ${queryTime}ms`);
         
         return res.json({
           data: result,
