@@ -1131,12 +1131,26 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
       }
 
       // Process results and safely trim strings
-      const result = rubros.map(rubro => ({
-        rubro: safeTrim(rubro.RUBRO) || '',
-        rubroPath: safeTrim(rubro.RUBRO_PATH) || '',
-        nota: safeTrim(rubro.NOTA),
-        notaMemo: safeTrim(rubro.NOTA_MEMO)
-      }));
+      const result = rubros.map(rubro => {
+        const item = {
+          rubro: safeTrim(rubro.RUBRO) || '',
+          rubroPath: safeTrim(rubro.RUBRO_PATH) || ''
+        };
+        
+        // Only include nota if it has a value
+        const nota = safeTrim(rubro.NOTA);
+        if (nota) {
+          item.nota = nota;
+        }
+        
+        // Only include notaMemo if it has a value
+        const notaMemo = safeTrim(rubro.NOTA_MEMO);
+        if (notaMemo) {
+          item.notaMemo = notaMemo;
+        }
+        
+        return item;
+      });
 
       db.detach();
       
