@@ -1286,6 +1286,7 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
       // Process results and safely trim strings
       const result = rubros.map(rubro => {
         const item = {
+          id: rubro.RUBRO_ID,
           rubro: safeTrim(rubro.RUBRO) || '',
           rubroPath: safeTrim(rubro.RUBRO_PATH) || ''
         };

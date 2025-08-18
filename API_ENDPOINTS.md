@@ -365,12 +365,14 @@ GET /rubros?search=encendido
 {
   "data": [
     {
+      "id": 45,
       "rubro": "FILTROS",
       "rubroPath": "LUBRICACION > FILTROS > ACEITE",
       "nota": "Filtros de alta calidad",
       "notaMemo": "Verificar compatibilidad antes de la instalación"
     },
     {
+      "id": 46,
       "rubro": "MOTOR",
       "rubroPath": "MOTOR"
     }
@@ -384,6 +386,7 @@ GET /rubros?search=encendido
 ```
 
 **Response Fields:**
+- `id`: Rubro ID (RUBRO_ID)
 - `rubro`: Rubro name (RUBRO)
 - `rubroPath`: Full hierarchical path (RUBRO_PATH)
 - `nota`: Short note (NOTA) - only included if has value
