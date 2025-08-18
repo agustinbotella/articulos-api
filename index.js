@@ -744,23 +744,25 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             id,
             articulo: safeTrim(a.RUBRO_NOMBRE),
             marca: safeTrim(a.MARCA),
-            descripcion: safeTrim(descripcion) || '',
-            precio,
-            stock,
-            complementarios,
-            sustitutos
+            descripcion: safeTrim(descripcion) || ''
           };
 
-          // Only include medida if it has a value
+          // Only include medida if it has a value (after descripcion)
           const medida = safeTrim(a.MED);
           if (medida && medida.trim() !== '') {
             articleData.medida = medida;
           }
 
-          // Only include años if it has a value
+          // Only include años if it has a value (after medida)
           if (años) {
             articleData.años = años;
           }
+
+          // Add remaining fields
+          articleData.precio = precio;
+          articleData.stock = stock;
+          articleData.complementarios = complementarios;
+          articleData.sustitutos = sustitutos;
 
           // Only include nota if it has a value
           const nota = safeTrim(a.ART_APLICACION_NOTAS);
@@ -1192,23 +1194,25 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             id,
             articulo: safeTrim(a.RUBRO_NOMBRE),
             marca: safeTrim(a.MARCA),
-            descripcion: safeTrim(descripcion) || '',
-            precio,
-            stock,
-            complementarios,
-            sustitutos
+            descripcion: safeTrim(descripcion) || ''
           };
 
-          // Only include medida if it has a value
+          // Only include medida if it has a value (after descripcion)
           const medida = safeTrim(a.MED);
           if (medida && medida.trim() !== '') {
             articleData.medida = medida;
           }
 
-          // Only include años if it has a value
+          // Only include años if it has a value (after medida)
           if (años) {
             articleData.años = años;
           }
+
+          // Add remaining fields
+          articleData.precio = precio;
+          articleData.stock = stock;
+          articleData.complementarios = complementarios;
+          articleData.sustitutos = sustitutos;
 
           // Only include nota if it has a value
           const nota = safeTrim(a.ART_APLICACION_NOTAS);
