@@ -401,19 +401,51 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
   const sql = `
     SELECT DISTINCT
       a.ART_ID,
+      a.MOD,
       a.MED, 
       a.NOTA,
-      aa.DESDE AS ART_APLICACION_DESDE,
-      aa.HASTA AS ART_APLICACION_HASTA,
+      a.DESC_ETIQUETA,
+      a.CALC_DESC_EXTEND as ORIGINAL_DESC,
+      (SELECT LIST(aa_desde.DESDE, ', ') 
+       FROM ART_APLICACION aa_desde 
+       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) AS ART_APLICACION_DESDE,
+      (SELECT LIST(aa_hasta.HASTA, ', ') 
+       FROM ART_APLICACION aa_hasta 
+       WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) AS ART_APLICACION_HASTA,
+      (SELECT LIST(aa_nota.NOTA, ', ') 
+       FROM ART_APLICACION aa_nota 
+       WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
+      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+           CASE WHEN (SELECT LIST(aa_desde.DESDE, ', ') 
+                      FROM ART_APLICACION aa_desde 
+                      WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
+                THEN ' DESDE ' || (SELECT LIST(aa_desde.DESDE, ', ') 
+                                   FROM ART_APLICACION aa_desde 
+                                   WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL)
+                ELSE '' END ||
+           CASE WHEN (SELECT LIST(aa_hasta.HASTA, ', ') 
+                      FROM ART_APLICACION aa_hasta 
+                      WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) IS NOT NULL
+                THEN ' HASTA ' || (SELECT LIST(aa_hasta.HASTA, ', ') 
+                                   FROM ART_APLICACION aa_hasta 
+                                   WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL)
+                ELSE '' END ||
+           CASE WHEN (SELECT LIST(aa_desc.NOTA, ', ') 
+                      FROM ART_APLICACION aa_desc 
+                      WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL) IS NOT NULL 
+                THEN ' - Nota: ' || (SELECT LIST(aa_desc.NOTA, ', ') 
+                                     FROM ART_APLICACION aa_desc 
+                                     WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL)
+                ELSE '' END) AS CALC_DESC_EXTEND,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
       ARTICULOS a
-    LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
-    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationId ? `AND aa.APLIC_ID = ${applicationId}` : ''}
+    ${applicationJoin}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
     ORDER BY a.ART_ID
     ${forBot ? '' : `ROWS ${offset + 1} TO ${offset + limit}`}
   `;
@@ -508,16 +540,33 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
         const relatedArticlesQuery = `
           SELECT 
             a.ART_ID,
-            a.MED,
-            a.NOTA,
-            aa.DESDE AS ART_APLICACION_DESDE,
-            aa.HASTA AS ART_APLICACION_HASTA,
+            TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+                 CASE WHEN (SELECT LIST(aa_desde_rel.DESDE, ', ') 
+                            FROM ART_APLICACION aa_desde_rel 
+                            WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
+                      THEN ' DESDE ' || (SELECT LIST(aa_desde_rel.DESDE, ', ') 
+                                         FROM ART_APLICACION aa_desde_rel 
+                                         WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL)
+                      ELSE '' END ||
+                 CASE WHEN (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
+                            FROM ART_APLICACION aa_hasta_rel 
+                            WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) IS NOT NULL
+                      THEN ' HASTA ' || (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
+                                         FROM ART_APLICACION aa_hasta_rel 
+                                         WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL)
+                      ELSE '' END ||
+                 CASE WHEN (SELECT LIST(aa_rel.NOTA, ', ') 
+                            FROM ART_APLICACION aa_rel 
+                            WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
+                      THEN ' - Nota: ' || (SELECT LIST(aa_rel.NOTA, ', ') 
+                                           FROM ART_APLICACION aa_rel 
+                                           WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
+                      ELSE '' END) AS CALC_DESC_EXTEND,
             m.MARCA,
             r.RUBRO_PATH AS RUBRO_NOMBRE,
             lp.PR_FINAL as PRECIO,
             s.EXISTENCIA as STOCK
           FROM ARTICULOS a
-          LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID
           LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
           LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
           LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
@@ -566,45 +615,19 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             .map(r => {
               const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
               if (relatedArticle) {
-                // Build años field from DESDE and HASTA
-                let años = null;
-                const desde = safeTrim(relatedArticle.ART_APLICACION_DESDE);
-                const hasta = safeTrim(relatedArticle.ART_APLICACION_HASTA);
-                
-                if (desde || hasta) {
-                  const desdeYear = desde ? desde.substring(0, 4) : '';
-                  const hastaYear = hasta ? hasta.substring(0, 4) : '';
-                  años = `Desde: ${desdeYear} - Hasta: ${hastaYear}`;
-                }
-
-                const relatedItem = {
+                // Convert buffer to string if needed
+                const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
+                  ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
+                  : relatedArticle.CALC_DESC_EXTEND;
+                  
+                return {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
-                  marca: safeTrim(relatedArticle.MARCA)
+                  marca: safeTrim(relatedArticle.MARCA),
+                  descripcion: safeTrim(relatedDescripcion) || '',
+                  precio: relatedArticle.PRECIO,
+                  stock: relatedArticle.STOCK
                 };
-
-                // Only include medida if it has a value
-                const medida = safeTrim(relatedArticle.MED);
-                if (medida && medida.trim() !== '') {
-                  relatedItem.medida = medida;
-                }
-
-                // Only include años if it was built
-                if (años) {
-                  relatedItem.años = años;
-                }
-
-                // Only include nota if it has a value
-                const nota = safeTrim(relatedArticle.NOTA);
-                if (nota && nota.trim() !== '') {
-                  relatedItem.nota = nota;
-                }
-
-                // Add precio and stock (stock defaults to 0 if null)
-                relatedItem.precio = relatedArticle.PRECIO;
-                relatedItem.stock = relatedArticle.STOCK || 0;
-                
-                return relatedItem;
               }
               // Fallback to just ID if details not found
               return { id: r.ART_REL_ID };
@@ -616,89 +639,57 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             .map(r => {
               const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
               if (relatedArticle) {
-                // Build años field from DESDE and HASTA
-                let años = null;
-                const desde = safeTrim(relatedArticle.ART_APLICACION_DESDE);
-                const hasta = safeTrim(relatedArticle.ART_APLICACION_HASTA);
-                
-                if (desde || hasta) {
-                  const desdeYear = desde ? desde.substring(0, 4) : '';
-                  const hastaYear = hasta ? hasta.substring(0, 4) : '';
-                  años = `Desde: ${desdeYear} - Hasta: ${hastaYear}`;
-                }
-
-                const relatedItem = {
+                // Convert buffer to string if needed
+                const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
+                  ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
+                  : relatedArticle.CALC_DESC_EXTEND;
+                  
+                return {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
-                  marca: safeTrim(relatedArticle.MARCA)
+                  marca: safeTrim(relatedArticle.MARCA),
+                  descripcion: safeTrim(relatedDescripcion) || '',
+                  precio: relatedArticle.PRECIO,
+                  stock: relatedArticle.STOCK
                 };
-
-                // Only include medida if it has a value
-                const medida = safeTrim(relatedArticle.MED);
-                if (medida && medida.trim() !== '') {
-                  relatedItem.medida = medida;
-                }
-
-                // Only include años if it was built
-                if (años) {
-                  relatedItem.años = años;
-                }
-
-                // Only include nota if it has a value
-                const nota = safeTrim(relatedArticle.NOTA);
-                if (nota && nota.trim() !== '') {
-                  relatedItem.nota = nota;
-                }
-
-                // Add precio and stock (stock defaults to 0 if null)
-                relatedItem.precio = relatedArticle.PRECIO;
-                relatedItem.stock = relatedArticle.STOCK || 0;
-                
-                return relatedItem;
               }
               // Fallback to just ID if details not found
               return { id: r.ART_REL_ID };
             });
 
-            // Build años field from DESDE and HASTA
-            let años = null;
-            const desde = safeTrim(a.ART_APLICACION_DESDE);
-            const hasta = safeTrim(a.ART_APLICACION_HASTA);
-            
-            if (desde || hasta) {
-              const desdeYear = desde ? desde.substring(0, 4) : '';
-              const hastaYear = hasta ? hasta.substring(0, 4) : '';
-              años = `Desde: ${desdeYear} - Hasta: ${hastaYear}`;
+            // Convert buffer to string if needed
+            const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
+              ? a.CALC_DESC_EXTEND.toString('utf8') 
+              : a.CALC_DESC_EXTEND;
+
+            // Debug logging for first few articles
+            if (debugCounter < 3) {
+              console.log(`🔍 DEBUG Article ${id}:`, {
+                MOD: a.MOD,
+                MED: a.MED, 
+                NOTA: a.NOTA,
+                ART_APLICACION_DESDE: a.ART_APLICACION_DESDE,
+                ART_APLICACION_HASTA: a.ART_APLICACION_HASTA,
+                ART_APLICACION_NOTAS: a.ART_APLICACION_NOTAS,
+                ORIGINAL_DESC: a.ORIGINAL_DESC,
+                CALC_DESC_EXTEND_RAW: a.CALC_DESC_EXTEND,
+                CALC_DESC_EXTEND_CONVERTED: descripcion
+              });
+              debugCounter++;
             }
 
-            const articleData = {
-              id,
-              articulo: safeTrim(a.RUBRO_NOMBRE),
-              marca: safeTrim(a.MARCA)
-            };
-
-            // Only include medida if it has a value
-            const medida = safeTrim(a.MED);
-            if (medida && medida.trim() !== '') {
-              articleData.medida = medida;
-            }
-
-            // Only include años if it was built
-            if (años) {
-              articleData.años = años;
-            }
-
-            // Only include nota if it has a value
-            const nota = safeTrim(a.NOTA);
-            if (nota && nota.trim() !== '') {
-              articleData.nota = nota;
-            }
-
-            // Add precio and stock (stock defaults to 0 if null)
-            articleData.precio = precio;
-            articleData.stock = stock || 0;
-            articleData.complementarios = complementarios;
-            articleData.sustitutos = sustitutos;
+                      const articleData = {
+            id,
+            articulo: safeTrim(a.RUBRO_NOMBRE),
+            marca: safeTrim(a.MARCA),
+            descripcion: safeTrim(descripcion) || '',
+            nota: safeTrim(a.NOTA),
+            detalle: safeTrim(a.DESC_ETIQUETA) || null,
+            precio,
+            stock,
+            complementarios,
+            sustitutos
+          };
 
           // No aplicaciones field - not needed for this endpoint
 
@@ -798,19 +789,51 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
   const sql = `
     SELECT DISTINCT
       a.ART_ID,
+      a.MOD,
       a.MED, 
       a.NOTA,
-      aa.DESDE AS ART_APLICACION_DESDE,
-      aa.HASTA AS ART_APLICACION_HASTA,
+      a.DESC_ETIQUETA,
+      a.CALC_DESC_EXTEND as ORIGINAL_DESC,
+      (SELECT LIST(aa_desde.DESDE, ', ') 
+       FROM ART_APLICACION aa_desde 
+       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) AS ART_APLICACION_DESDE,
+      (SELECT LIST(aa_hasta.HASTA, ', ') 
+       FROM ART_APLICACION aa_hasta 
+       WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) AS ART_APLICACION_HASTA,
+      (SELECT LIST(aa_nota.NOTA, ', ') 
+       FROM ART_APLICACION aa_nota 
+       WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
+      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+           CASE WHEN (SELECT LIST(aa_desde.DESDE, ', ') 
+                      FROM ART_APLICACION aa_desde 
+                      WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
+                THEN ' DESDE ' || (SELECT LIST(aa_desde.DESDE, ', ') 
+                                   FROM ART_APLICACION aa_desde 
+                                   WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL)
+                ELSE '' END ||
+           CASE WHEN (SELECT LIST(aa_hasta.HASTA, ', ') 
+                      FROM ART_APLICACION aa_hasta 
+                      WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) IS NOT NULL
+                THEN ' HASTA ' || (SELECT LIST(aa_hasta.HASTA, ', ') 
+                                   FROM ART_APLICACION aa_hasta 
+                                   WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL)
+                ELSE '' END ||
+           CASE WHEN (SELECT LIST(aa_desc.NOTA, ', ') 
+                      FROM ART_APLICACION aa_desc 
+                      WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL) IS NOT NULL 
+                THEN ' - Nota: ' || (SELECT LIST(aa_desc.NOTA, ', ') 
+                                     FROM ART_APLICACION aa_desc 
+                                     WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL)
+                ELSE '' END) AS CALC_DESC_EXTEND,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
       ARTICULOS a
-    LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
-    WHERE ${baseWhere} ${stockFilter} AND aa.APLIC_ID IN (${applicationIdsString})
+    ${applicationJoin}
+    WHERE ${baseWhere} ${stockFilter} ${applicationFilter}
     ORDER BY a.ART_ID
   `;
 
@@ -880,16 +903,33 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
         const relatedArticlesQuery = `
           SELECT 
             a.ART_ID,
-            a.MED,
-            a.NOTA,
-            aa.DESDE AS ART_APLICACION_DESDE,
-            aa.HASTA AS ART_APLICACION_HASTA,
+            TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+                 CASE WHEN (SELECT LIST(aa_desde_rel.DESDE, ', ') 
+                            FROM ART_APLICACION aa_desde_rel 
+                            WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
+                      THEN ' DESDE ' || (SELECT LIST(aa_desde_rel.DESDE, ', ') 
+                                         FROM ART_APLICACION aa_desde_rel 
+                                         WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL)
+                      ELSE '' END ||
+                 CASE WHEN (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
+                            FROM ART_APLICACION aa_hasta_rel 
+                            WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) IS NOT NULL
+                      THEN ' HASTA ' || (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
+                                         FROM ART_APLICACION aa_hasta_rel 
+                                         WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL)
+                      ELSE '' END ||
+                 CASE WHEN (SELECT LIST(aa_rel.NOTA, ', ') 
+                            FROM ART_APLICACION aa_rel 
+                            WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
+                      THEN ' - Nota: ' || (SELECT LIST(aa_rel.NOTA, ', ') 
+                                           FROM ART_APLICACION aa_rel 
+                                           WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
+                      ELSE '' END) AS CALC_DESC_EXTEND,
             m.MARCA,
             r.RUBRO_PATH AS RUBRO_NOMBRE,
             lp.PR_FINAL as PRECIO,
             s.EXISTENCIA as STOCK
           FROM ARTICULOS a
-          LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID
           LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
           LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
           LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
@@ -937,45 +977,19 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             .map(r => {
               const relatedArticle = responses.relatedArticles.find(ra => ra.ART_ID === r.ART_REL_ID);
               if (relatedArticle) {
-                // Build años field from DESDE and HASTA
-                let años = null;
-                const desde = safeTrim(relatedArticle.ART_APLICACION_DESDE);
-                const hasta = safeTrim(relatedArticle.ART_APLICACION_HASTA);
-                
-                if (desde || hasta) {
-                  const desdeYear = desde ? desde.substring(0, 4) : '';
-                  const hastaYear = hasta ? hasta.substring(0, 4) : '';
-                  años = `Desde: ${desdeYear} - Hasta: ${hastaYear}`;
-                }
-
-                const relatedItem = {
+                // Convert buffer to string if needed
+                const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
+                  ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
+                  : relatedArticle.CALC_DESC_EXTEND;
+                  
+                return {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
-                  marca: safeTrim(relatedArticle.MARCA)
+                  marca: safeTrim(relatedArticle.MARCA),
+                  descripcion: safeTrim(relatedDescripcion) || '',
+                  precio: relatedArticle.PRECIO,
+                  stock: relatedArticle.STOCK
                 };
-
-                // Only include medida if it has a value
-                const medida = safeTrim(relatedArticle.MED);
-                if (medida && medida.trim() !== '') {
-                  relatedItem.medida = medida;
-                }
-
-                // Only include años if it was built
-                if (años) {
-                  relatedItem.años = años;
-                }
-
-                // Only include nota if it has a value
-                const nota = safeTrim(relatedArticle.NOTA);
-                if (nota && nota.trim() !== '') {
-                  relatedItem.nota = nota;
-                }
-
-                // Add precio and stock (stock defaults to 0 if null)
-                relatedItem.precio = relatedArticle.PRECIO;
-                relatedItem.stock = relatedArticle.STOCK || 0;
-                
-                return relatedItem;
               }
               // Fallback to just ID if details not found
               return { id: r.ART_REL_ID };
@@ -987,89 +1001,41 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             .map(r => {
               const relatedArticle = (responses.relatedArticles || []).find(ra => ra.ART_ID === r.ART_REL_ID);
               if (relatedArticle) {
-                // Build años field from DESDE and HASTA
-                let años = null;
-                const desde = safeTrim(relatedArticle.ART_APLICACION_DESDE);
-                const hasta = safeTrim(relatedArticle.ART_APLICACION_HASTA);
-                
-                if (desde || hasta) {
-                  const desdeYear = desde ? desde.substring(0, 4) : '';
-                  const hastaYear = hasta ? hasta.substring(0, 4) : '';
-                  años = `Desde: ${desdeYear} - Hasta: ${hastaYear}`;
-                }
-
-                const relatedItem = {
+                // Convert buffer to string if needed
+                const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
+                  ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
+                  : relatedArticle.CALC_DESC_EXTEND;
+                  
+                return {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
-                  marca: safeTrim(relatedArticle.MARCA)
+                  marca: safeTrim(relatedArticle.MARCA),
+                  descripcion: safeTrim(relatedDescripcion) || '',
+                  precio: relatedArticle.PRECIO,
+                  stock: relatedArticle.STOCK
                 };
-
-                // Only include medida if it has a value
-                const medida = safeTrim(relatedArticle.MED);
-                if (medida && medida.trim() !== '') {
-                  relatedItem.medida = medida;
-                }
-
-                // Only include años if it was built
-                if (años) {
-                  relatedItem.años = años;
-                }
-
-                // Only include nota if it has a value
-                const nota = safeTrim(relatedArticle.NOTA);
-                if (nota && nota.trim() !== '') {
-                  relatedItem.nota = nota;
-                }
-
-                // Add precio and stock (stock defaults to 0 if null)
-                relatedItem.precio = relatedArticle.PRECIO;
-                relatedItem.stock = relatedArticle.STOCK || 0;
-                
-                return relatedItem;
               }
               // Fallback to just ID if details not found
               return { id: r.ART_REL_ID };
             });
 
-          // Build años field from DESDE and HASTA
-          let años = null;
-          const desde = safeTrim(a.ART_APLICACION_DESDE);
-          const hasta = safeTrim(a.ART_APLICACION_HASTA);
-          
-          if (desde || hasta) {
-            const desdeYear = desde ? desde.substring(0, 4) : '';
-            const hastaYear = hasta ? hasta.substring(0, 4) : '';
-            años = `Desde: ${desdeYear} - Hasta: ${hastaYear}`;
-          }
+          // Convert buffer to string if needed
+          const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
+            ? a.CALC_DESC_EXTEND.toString('utf8') 
+            : a.CALC_DESC_EXTEND;
 
           const articleData = {
             id,
             articulo: safeTrim(a.RUBRO_NOMBRE),
-            marca: safeTrim(a.MARCA)
+            marca: safeTrim(a.MARCA),
+            descripcion: safeTrim(descripcion) || '',
+            nota: safeTrim(a.NOTA),
+            detalle: safeTrim(a.DESC_ETIQUETA) || null,
+            precio,
+            stock,
+            complementarios,
+            sustitutos
           };
-
-          // Only include medida if it has a value
-          const medida = safeTrim(a.MED);
-          if (medida && medida.trim() !== '') {
-            articleData.medida = medida;
-          }
-
-          // Only include años if it was built
-          if (años) {
-            articleData.años = años;
-          }
-
-          // Only include nota if it has a value
-          const nota = safeTrim(a.NOTA);
-          if (nota && nota.trim() !== '') {
-            articleData.nota = nota;
-          }
-
-          // Add precio and stock (stock defaults to 0 if null)
-          articleData.precio = precio;
-          articleData.stock = stock || 0;
-          articleData.complementarios = complementarios;
-          articleData.sustitutos = sustitutos;
 
           // No aplicaciones field - not needed for this endpoint
 
