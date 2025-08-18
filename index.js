@@ -353,11 +353,11 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
     }
   }
   
-  // Make application IDs optional if search or rubroId is provided
+  // Make application ID optional if search or rubroId is provided
   if ((!applicationIds || applicationIds.length === 0) && !search && !rubroId) {
     return res.status(400).json({
-      error: 'Application IDs, search, or rubroId required',
-      message: 'Please provide applicationId/applicationIds parameter, search parameter, or rubroId parameter'
+      error: 'Application ID, search, or rubroId required',
+      message: 'Please provide applicationId parameter, search parameter, or rubroId parameter'
     });
   }
   

@@ -4,7 +4,7 @@ Base URL: `http://192.168.1.106:3000`
 
 ## 📋 Available Endpoints
 
-Total: 6 endpoints
+Total: 5 endpoints
 
 ### 1. Health Check
 **GET** `/`
@@ -21,38 +21,35 @@ API is working
 ### 2. Search Articles
 **GET** `/articles`
 
-Search for articles with pagination, filtering, and full relationship data.
+Search and filter articles with multiple criteria. Returns all matching results without pagination.
 
 **Parameters:**
-- `search` (string, required): Search term - supports word-based search
-- `page` (integer, optional): Page number (default: 1)
-- `limit` (integer, optional): Results per page (default: 20, max: 100)
-- `onlyWithStock` (boolean, optional): Filter only articles with stock OR articles with substitute stock (default: false)
+- `search` (string, optional): Search term - searches within the `articulo` field (RUBRO_PATH) using word-based search
 - `applicationId` (integer, optional): Filter articles by specific application ID
 - `rubroId` (integer, optional): Filter articles by specific rubro ID
+- `onlyWithStock` (boolean, optional): Filter only articles with stock OR articles with substitute stock (default: false)
+
+**Note:** At least one of `search`, `applicationId`, or `rubroId` must be provided.
 
 **Example Requests:**
 ```bash
-# Basic search
-GET /articles?search=bujia
-
-# Search with pagination
-GET /articles?search=bujia&page=2&limit=50
-
-# Search only articles with stock (includes articles with substitute stock)
-GET /articles?search=bujia&onlyWithStock=true
+# Search by articulo (RUBRO_PATH)
+GET /articles?search=FILTROS
 
 # Filter by specific application
-GET /articles?search=bujia&applicationId=365
+GET /articles?applicationId=365
 
 # Filter by specific rubro
-GET /articles?search=bujia&rubroId=45
+GET /articles?rubroId=45
+
+# Search with stock filter (includes articles with substitute stock)
+GET /articles?search=FILTROS&onlyWithStock=true
 
 # Combined filters
-GET /articles?search=motor&onlyWithStock=true&applicationId=365&rubroId=45&limit=50
+GET /articles?search=MOTOR&applicationId=365&rubroId=45&onlyWithStock=true
 
 # Word-based search (order doesn't matter)
-GET /articles?search=gol power bujia
+GET /articles?search=JUEGOS JUNTAS MOTOR
 ```
 
 **Response Format:**
@@ -130,112 +127,7 @@ GET /articles?search=gol power bujia
 
 ---
 
-### 3. Get Articles by Application IDs
-**GET** `/articles/by-applications`
-
-Retrieve all articles that belong to specific application IDs, search terms, or rubro filters. This endpoint returns all matching articles without pagination.
-
-**Parameters:**
-- `applicationId` (integer, optional): Single application ID to filter by
-- `applicationIds` (string/array, optional): Multiple application IDs (comma-separated string or array)
-- `search` (string, optional): Search term - supports word-based search across articulo (RUBRO_PATH)
-- `rubroId` (integer, optional): Filter articles by specific rubro ID
-- `onlyWithStock` (boolean, optional): Filter only articles with stock OR articles with substitute stock (default: false)
-
-**Note:** At least one of `applicationId`, `applicationIds`, `search`, or `rubroId` must be provided. If none are provided, the endpoint returns a 400 error.
-
-**Example Requests:**
-```bash
-# Single application ID
-GET /articles/by-applications?applicationId=365
-
-# Multiple application IDs (comma-separated)
-GET /articles/by-applications?applicationIds=365,421,508
-
-# With stock filter
-GET /articles/by-applications?applicationIds=365,421&onlyWithStock=true
-
-# Search only (no application IDs needed)
-GET /articles/by-applications?search=FILTROS
-
-# Filter by rubro only
-GET /articles/by-applications?rubroId=45
-
-# Combined filters
-GET /articles/by-applications?applicationIds=365,421&search=MOTOR&rubroId=45&onlyWithStock=true
-```
-
-**Response Format:**
-```json
-{
-  "data": [
-    {
-      "id": 61085,
-      "articulo": "Encendido",
-      "marca": "BOSCH", 
-      "descripcion": "Producto de alta demanda",
-      "medida": "14mm",
-      "años": "Desde: 2018 - Hasta: 2020",
-      "nota": "Aplicación específica para motores turbo",
-      "precio": 1234,
-      "stock": 42,
-      "complementarios": [
-        {
-          "id": 208,
-          "articulo": "FILTROS > ACEITE",
-          "marca": "MANN",
-          "descripcion": "Filtro de Aceite Premium",
-          "precio": 890,
-          "stock": 15
-        }
-      ],
-      "sustitutos": [
-        {
-          "id": 102,
-          "articulo": "ENCENDIDO > BUJIAS",
-          "marca": "NGK",
-          "descripcion": "Bujía Gol Power Alternativa",
-          "precio": 1100,
-          "stock": 8
-        }
-      ]
-    }
-  ],
-  "meta": {
-    "queryTime": "125ms",
-    "applicationIds": [365, 421, 508],
-    "totalCount": 1
-  }
-}
-```
-
-**Response Fields:**
-- `id`: Article ID (ART_ID)
-- `articulo`: Article category/rubro name (RUBRO_PATH)
-- `marca`: Brand name (MARCA)
-- `descripcion`: Article description (ARTICULOS.NOTA)
-- `medida`: Measurements/dimensions (MED) - only included if has value
-- `años`: Year range from applications (formatted as "Desde: YYYY - Hasta: YYYY") - only included if has value
-- `nota`: Application-specific notes (ART_APLICACION.NOTA) - only included if has value
-- `precio`: Price (integer, no decimals)
-- `stock`: Stock quantity or special message:
-  - Number: actual stock available
-  - `0`: no stock
-  - `"0 - Posee stock de sustitutos"`: no main stock but substitutes have stock
-- `complementarios`: Array of complementary articles
-- `sustitutos`: Array of substitute articles
-
-**Error Response (when no parameters provided):**
-```json
-{
-  "error": "Application IDs, search, or rubroId required",
-  "message": "Please provide applicationId/applicationIds parameter, search parameter, or rubroId parameter"
-}
-```
-
----
-
-### 4. Search Applications
+### 3. Search Applications
 **GET** `/aplicaciones`
 
 Returns applications from the APLICACIONES table. Search parameter is required for performance reasons. Article counts are calculated only for the current page results.
@@ -305,7 +197,7 @@ GET /aplicaciones?search=corsa 1.4
 
 ---
 
-### 5. Get Familias
+### 4. Get Familias
 **GET** `/familias`
 
 Returns all familias/categories from the ARTRUBROS table with optional search functionality. No pagination is applied - returns all matching results.
@@ -369,7 +261,7 @@ GET /familias?search=encendido
 
 ---
 
-### 6. Get Rubros
+### 5. Get Rubros
 **GET** `/rubros`
 
 Returns all rubros/categories from the ARTRUBROS table with optional search functionality and article counts. No pagination is applied - returns all matching results.
@@ -511,19 +403,14 @@ curl "http://192.168.1.106:3000/familias?search=filtro"
 curl http://192.168.1.106:3000/rubros
 curl "http://192.168.1.106:3000/rubros?search=motor"
 
-# Test articles search
-curl "http://192.168.1.106:3000/articles?search=bujia"
-
-# Test articles by application IDs
-curl "http://192.168.1.106:3000/articles/by-applications?applicationId=365"
-curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365,421,508"
-
-# Test articles by-applications with search
-curl "http://192.168.1.106:3000/articles/by-applications?search=FILTROS"
+# Test articles endpoint
+curl "http://192.168.1.106:3000/articles?search=FILTROS"
+curl "http://192.168.1.106:3000/articles?applicationId=365"
+curl "http://192.168.1.106:3000/articles?rubroId=45"
 
 # Test with filters (includes substitute stock)
-curl "http://192.168.1.106:3000/articles?search=bujia&onlyWithStock=true&rubroId=45&limit=10"
-curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365&search=MOTOR&rubroId=45&onlyWithStock=true"
+curl "http://192.168.1.106:3000/articles?search=FILTROS&onlyWithStock=true&rubroId=45"
+curl "http://192.168.1.106:3000/articles?applicationId=365&search=MOTOR&rubroId=45&onlyWithStock=true"
 ```
 
 ### Load Testing
