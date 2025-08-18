@@ -693,6 +693,16 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             const desde = safeTrim(a.ART_APLICACION_DESDE);
             const hasta = safeTrim(a.ART_APLICACION_HASTA);
             
+            // Debug logging for first few articles
+            if (debugCounter < 3) {
+              console.log(`🔍 DEBUG Article ${id} AÑOS:`, {
+                ART_APLICACION_DESDE: desde,
+                ART_APLICACION_HASTA: hasta,
+                desde_type: typeof desde,
+                hasta_type: typeof hasta
+              });
+            }
+            
             if (desde || hasta) {
               // Parse comma-separated dates and extract years
               let desdeYear = '';
@@ -1085,6 +1095,14 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
           let años = null;
           const desde = safeTrim(a.ART_APLICACION_DESDE);
           const hasta = safeTrim(a.ART_APLICACION_HASTA);
+          
+          // Debug logging for first few articles
+          console.log(`🔍 DEBUG By-App Article ${id} AÑOS:`, {
+            ART_APLICACION_DESDE: desde,
+            ART_APLICACION_HASTA: hasta,
+            desde_type: typeof desde,
+            hasta_type: typeof hasta
+          });
           
           if (desde || hasta) {
             // Parse comma-separated dates and extract years
