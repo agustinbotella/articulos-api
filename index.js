@@ -413,8 +413,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
-    ${applicationJoin}
-    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationFilter}
+    WHERE ${baseWhere} ${searchFilter} ${stockFilter} ${applicationId ? `AND aa.APLIC_ID = ${applicationId}` : ''}
     ORDER BY a.ART_ID
     ${forBot ? '' : `ROWS ${offset + 1} TO ${offset + limit}`}
   `;
@@ -811,8 +810,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
-    ${applicationJoin}
-    WHERE ${baseWhere} ${stockFilter} ${applicationFilter}
+    WHERE ${baseWhere} ${stockFilter} AND aa.APLIC_ID IN (${applicationIdsString})
     ORDER BY a.ART_ID
   `;
 
