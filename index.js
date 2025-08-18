@@ -1137,15 +1137,15 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
           rubroPath: safeTrim(rubro.RUBRO_PATH) || ''
         };
         
-        // Only include nota if it has a value
+        // Only include nota if it has a value (not null and not empty)
         const nota = safeTrim(rubro.NOTA);
-        if (nota) {
+        if (nota && nota.trim() !== '') {
           item.nota = nota;
         }
         
-        // Only include notaMemo if it has a value
+        // Only include notaMemo if it has a value (not null and not empty)
         const notaMemo = safeTrim(rubro.NOTA_MEMO);
-        if (notaMemo) {
+        if (notaMemo && notaMemo.trim() !== '') {
           item.notaMemo = notaMemo;
         }
         
