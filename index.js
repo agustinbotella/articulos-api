@@ -690,8 +690,20 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
                       // Create años field from DESDE and HASTA
             let años = null;
-            const desde = safeTrim(a.ART_APLICACION_DESDE);
-            const hasta = safeTrim(a.ART_APLICACION_HASTA);
+            
+            // Convert buffers to strings before processing
+            let rawDesde = a.ART_APLICACION_DESDE;
+            let rawHasta = a.ART_APLICACION_HASTA;
+            
+            if (rawDesde instanceof Buffer) {
+              rawDesde = rawDesde.toString('utf8');
+            }
+            if (rawHasta instanceof Buffer) {
+              rawHasta = rawHasta.toString('utf8');
+            }
+            
+            const desde = safeTrim(rawDesde);
+            const hasta = safeTrim(rawHasta);
             
             if (desde || hasta) {
               // Parse comma-separated dates and extract years
@@ -1107,8 +1119,20 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
 
           // Create años field from DESDE and HASTA
           let años = null;
-          const desde = safeTrim(a.ART_APLICACION_DESDE);
-          const hasta = safeTrim(a.ART_APLICACION_HASTA);
+          
+          // Convert buffers to strings before processing
+          let rawDesde = a.ART_APLICACION_DESDE;
+          let rawHasta = a.ART_APLICACION_HASTA;
+          
+          if (rawDesde instanceof Buffer) {
+            rawDesde = rawDesde.toString('utf8');
+          }
+          if (rawHasta instanceof Buffer) {
+            rawHasta = rawHasta.toString('utf8');
+          }
+          
+          const desde = safeTrim(rawDesde);
+          const hasta = safeTrim(rawHasta);
           
           // Debug logging for articles
           console.log(`🔍 DEBUG By-App Article ${id} AÑOS:`, {
@@ -1117,7 +1141,9 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             desde_type: typeof desde,
             hasta_type: typeof hasta,
             raw_desde: a.ART_APLICACION_DESDE,
-            raw_hasta: a.ART_APLICACION_HASTA
+            raw_hasta: a.ART_APLICACION_HASTA,
+            converted_desde: rawDesde,
+            converted_hasta: rawHasta
           });
           
           if (desde || hasta) {
