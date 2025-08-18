@@ -379,7 +379,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
       searchFilter = `AND (${wordConditions.join(' AND ')})`;
     }
   }
-  
+
   // Add stock filter to WHERE clause if needed - include articles with substitute stock
   const stockFilter = onlyWithStock 
     ? `AND (s.EXISTENCIA > 0 OR EXISTS (
@@ -444,32 +444,32 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
     if (err) return res.status(500).json({ error: 'DB connection failed' });
 
     // Get the articles (no count query needed since we return all)
-    db.query(sql, (err, articles) => {
-      if (err) {
-        db.detach();
-        return res.status(500).json({ error: 'Query failed', details: err.message });
-      }
+      db.query(sql, (err, articles) => {
+        if (err) {
+          db.detach();
+          return res.status(500).json({ error: 'Query failed', details: err.message });
+        }
 
-      if (articles.length === 0) {
-        db.detach();
-        const endTime = Date.now();
-        const queryTime = endTime - startTime;
-        
+        if (articles.length === 0) {
+          db.detach();
+          const endTime = Date.now();
+          const queryTime = endTime - startTime;
+          
         console.log(`🎯 By-Applications: Search: "${search || 'none'}" | App IDs: [${applicationIds.join(',') || 'none'}] | Rubro Filter: ${rubroId || 'none'} | Stock Filter: ${onlyWithStock} | Results: 0 | Time: ${queryTime}ms`);
-        
-        return res.json({
-          data: [],
-          meta: {
-            queryTime: `${queryTime}ms`,
+          
+            return res.json({
+              data: [],
+              meta: {
+                queryTime: `${queryTime}ms`,
             applicationIds: applicationIds,
             totalCount: 0
-          }
-        });
-      }
+              }
+            });
+        }
 
-    const ids = articles.map(a => a.ART_ID).join(',');
+      const ids = articles.map(a => a.ART_ID).join(',');
 
-    const queries = {
+          const queries = {
       precios: `SELECT ART_ID, PR_FINAL FROM ARTLPR WHERE LISTA_ID = 7 AND ART_ID IN (${ids})`,
 
       stock: `SELECT ART_ID, EXISTENCIA FROM STOCK WHERE DEP_ID = 12 AND ART_ID IN (${ids})`,
@@ -478,14 +478,14 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
              WHERE ART_ID IN (${ids})`
     };
 
-    const responses = {};
-    const keys = Object.keys(queries);
+      const responses = {};
+      const keys = Object.keys(queries);
 
     // Initialize response arrays to prevent undefined errors
     responses.rels = [];
     responses.relatedArticles = [];
 
-    const runSequentially = (i = 0) => {
+          const runSequentially = (i = 0) => {
       if (i >= keys.length) {
         // Collect all related article IDs
         const allRelatedIds = new Set();
@@ -550,21 +550,21 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
         });
         return;
       }
+        
+        const key = keys[i];
+        const query = queries[key];
+
+        db.query(query, (err, rows) => {
+          responses[key] = !err ? rows : [];
+          runSequentially(i + 1);
+        });
+      };
       
-      const key = keys[i];
-      const query = queries[key];
+      function processResults() {
+        db.detach();
 
-      db.query(query, (err, rows) => {
-        responses[key] = !err ? rows : [];
-        runSequentially(i + 1);
-      });
-    };
-    
-    function processResults() {
-      db.detach();
-
-      const result = articles.map(a => {
-          const id = a.ART_ID;
+        const result = articles.map(a => {
+            const id = a.ART_ID;
 
           // Remove aplicaciones - not needed for this endpoint
 
@@ -584,7 +584,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                 const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
                   ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
                   : relatedArticle.CALC_DESC_EXTEND;
-
+                  
                 // For now, set medida and años to null for related articles
                 // TODO: Update related articles query to include MED and ART_APLICACION fields
                 
@@ -623,7 +623,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                 const relatedDescripcion = relatedArticle.CALC_DESC_EXTEND instanceof Buffer 
                   ? relatedArticle.CALC_DESC_EXTEND.toString('utf8') 
                   : relatedArticle.CALC_DESC_EXTEND;
-
+                  
                 // For now, set medida and años to null for related articles
                 // TODO: Update related articles query to include MED and ART_APLICACION fields
                 
@@ -658,10 +658,10 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             stock = "0 - Posee stock de sustitutos";
           }
 
-          // Convert buffer to string if needed
-          const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
-            ? a.CALC_DESC_EXTEND.toString('utf8') 
-            : a.CALC_DESC_EXTEND;
+            // Convert buffer to string if needed
+            const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
+              ? a.CALC_DESC_EXTEND.toString('utf8') 
+              : a.CALC_DESC_EXTEND;
 
           // Create años field from DESDE and HASTA
           let años = null;
@@ -676,7 +676,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           if (rawHasta instanceof Buffer) {
             rawHasta = rawHasta.toString('utf8');
           }
-          
+
           const desde = safeTrim(rawDesde);
           const hasta = safeTrim(rawHasta);
           
@@ -684,15 +684,15 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             // Parse comma-separated dates and extract years
             let desdeYear = '';
             let hastaYear = '';
-            
+          
             if (desde) {
               // Take the first date from comma-separated list and extract year
               const firstDesde = desde.split(',')[0].trim();
               if (firstDesde.length >= 4) {
                 desdeYear = firstDesde.substring(0, 4);
-              }
-            }
-            
+          }
+        }
+
             if (hasta) {
               // Take the first date from comma-separated list and extract year
               const firstHasta = hasta.split(',')[0].trim();
@@ -740,19 +740,13 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           articleData.sustitutos = sustitutos;
 
           // Only include nota if it has a value
-          const nota = safeTrim(a.ART_APLICACION_NOTAS);
-          
-          // Debug logging for article 78670
-          if (id === 78670) {
-            console.log(`🔍 DEBUG Article 78670 NOTA:`, {
-              ART_APLICACION_NOTAS: a.ART_APLICACION_NOTAS,
-              ART_APLICACION_NOTAS_type: typeof a.ART_APLICACION_NOTAS,
-              nota_after_safeTrim: nota,
-              nota_type: typeof nota,
-              nota_length: nota ? nota.length : 'null'
-            });
+          // Convert buffer to string if needed
+          let rawNota = a.ART_APLICACION_NOTAS;
+          if (rawNota instanceof Buffer) {
+            rawNota = rawNota.toString('utf8');
           }
           
+          const nota = safeTrim(rawNota);
           if (nota && nota.trim() !== '') {
             articleData.nota = nota;
           }
@@ -813,7 +807,7 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
 
   // Query to get all rubros
   const sql = `
-    SELECT 
+          SELECT 
       r.RUBRO_ID,
       r.EMP_ID,
       r.RUBRO_PADRE_ID,
@@ -844,7 +838,7 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
       const queryTime = endTime - startTime;
 
       if (err) {
-        db.detach();
+      db.detach();
         console.error('Rubros query failed:', err);
         return res.status(500).json({ 
           error: 'Query failed', 
@@ -864,7 +858,7 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
         const otrosNombres = safeTrim(rubro.NOTA);
         if (otrosNombres && otrosNombres.trim() !== '') {
           item.otrosNombres = otrosNombres;
-        }
+              }
         
         // Only include notaMemo if it has a value (not null and not empty)
         const notaMemo = safeTrim(rubro.NOTA_MEMO);
@@ -873,20 +867,20 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
         }
         
         return item;
-      });
+        });
 
       db.detach();
-      
+        
       console.log(`📂 Rubros: "${search || 'all'}" | ${forBot ? 'Bot' : 'Web'} | Results: ${result.length} | Time: ${queryTime}ms`);
-      
+        
       res.json({
-        data: result,
-        meta: {
+          data: result,
+          meta: {
           queryTime: queryTime,
           totalCount: result.length,
           searchTerm: search || null
-        }
-      });
+          }
+        });
     });
   });
 });
