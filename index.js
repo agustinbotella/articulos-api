@@ -525,27 +525,19 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
         const relatedArticlesQuery = `
           SELECT 
             a.ART_ID,
-            TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-                 CASE WHEN (SELECT LIST(aa_desde_rel.DESDE, ', ') 
-                            FROM ART_APLICACION aa_desde_rel 
-                            WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
-                      THEN ' DESDE ' || (SELECT LIST(aa_desde_rel.DESDE, ', ') 
-                                         FROM ART_APLICACION aa_desde_rel 
-                                         WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL)
-                      ELSE '' END ||
-                 CASE WHEN (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
-                            FROM ART_APLICACION aa_hasta_rel 
-                            WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) IS NOT NULL
-                      THEN ' HASTA ' || (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
-                                         FROM ART_APLICACION aa_hasta_rel 
-                                         WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL)
-                      ELSE '' END ||
-                 CASE WHEN (SELECT LIST(aa_rel.NOTA, ', ') 
+            a.MED,
+            (SELECT LIST(aa_desde_rel.DESDE, ', ') 
+             FROM ART_APLICACION aa_desde_rel 
+             WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) AS ART_APLICACION_DESDE,
+            (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
+             FROM ART_APLICACION aa_hasta_rel 
+             WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) AS ART_APLICACION_HASTA,
+            TRIM(CASE WHEN (SELECT LIST(aa_rel.NOTA, ', ') 
                             FROM ART_APLICACION aa_rel 
                             WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
-                      THEN ' - Nota: ' || (SELECT LIST(aa_rel.NOTA, ', ') 
-                                           FROM ART_APLICACION aa_rel 
-                                           WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
+                      THEN (SELECT LIST(aa_rel.NOTA, ', ') 
+                            FROM ART_APLICACION aa_rel 
+                            WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
                       ELSE '' END) AS CALC_DESC_EXTEND,
             m.MARCA,
             r.RUBRO_PATH AS RUBRO_NOMBRE,
