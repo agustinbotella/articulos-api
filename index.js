@@ -1132,15 +1132,10 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
 
       // Process results and safely trim strings
       const result = rubros.map(rubro => ({
-        id: rubro.RUBRO_ID,
-        empId: rubro.EMP_ID,
-        rubroPadreId: rubro.RUBRO_PADRE_ID,
         rubro: safeTrim(rubro.RUBRO) || '',
         rubroPath: safeTrim(rubro.RUBRO_PATH) || '',
-        imagen: safeTrim(rubro.IMAGEN),
         nota: safeTrim(rubro.NOTA),
-        notaMemo: safeTrim(rubro.NOTA_MEMO),
-        articleCount: rubro.ARTICLE_COUNT || 0
+        notaMemo: safeTrim(rubro.NOTA_MEMO)
       }));
 
       db.detach();
