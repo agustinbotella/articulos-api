@@ -617,11 +617,12 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
                   descripcion: safeTrim(relatedDescripcion) || '',
-                  medida: null,
-                  años: null,
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK
                 };
+
+                // Note: medida and años are null for related articles since we don't fetch that data
+                // They will be excluded from the response
 
 
 
@@ -650,11 +651,12 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
                   descripcion: safeTrim(relatedDescripcion) || '',
-                  medida: null,
-                  años: null,
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK
                 };
+
+                // Note: medida and años are null for related articles since we don't fetch that data
+                // They will be excluded from the response
 
 
 
@@ -743,13 +745,22 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             articulo: safeTrim(a.RUBRO_NOMBRE),
             marca: safeTrim(a.MARCA),
             descripcion: safeTrim(descripcion) || '',
-            medida: safeTrim(a.MED),
-            años,
             precio,
             stock,
             complementarios,
             sustitutos
           };
+
+          // Only include medida if it has a value
+          const medida = safeTrim(a.MED);
+          if (medida && medida.trim() !== '') {
+            articleData.medida = medida;
+          }
+
+          // Only include años if it has a value
+          if (años) {
+            articleData.años = años;
+          }
 
           // Only include nota if it has a value
           const nota = safeTrim(a.ART_APLICACION_NOTAS);
@@ -1070,11 +1081,12 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
                   descripcion: safeTrim(relatedDescripcion) || '',
-                  medida: null,
-                  años: null,
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK
                 };
+
+                // Note: medida and años are null for related articles since we don't fetch that data
+                // They will be excluded from the response
 
 
 
@@ -1103,11 +1115,12 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
                   descripcion: safeTrim(relatedDescripcion) || '',
-                  medida: null,
-                  años: null,
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK
                 };
+
+                // Note: medida and años are null for related articles since we don't fetch that data
+                // They will be excluded from the response
 
 
 
@@ -1180,13 +1193,22 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             articulo: safeTrim(a.RUBRO_NOMBRE),
             marca: safeTrim(a.MARCA),
             descripcion: safeTrim(descripcion) || '',
-            medida: safeTrim(a.MED),
-            años,
             precio,
             stock,
             complementarios,
             sustitutos
           };
+
+          // Only include medida if it has a value
+          const medida = safeTrim(a.MED);
+          if (medida && medida.trim() !== '') {
+            articleData.medida = medida;
+          }
+
+          // Only include años if it has a value
+          if (años) {
+            articleData.años = años;
+          }
 
           // Only include nota if it has a value
           const nota = safeTrim(a.ART_APLICACION_NOTAS);
