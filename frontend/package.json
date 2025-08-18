@@ -1,0 +1,16 @@
+{
+  "name": "articulos-api-frontend-test",
+  "version": "1.0.0",
+  "description": "Frontend test interface for Articulos API",
+  "main": "server-frontend.js",
+  "scripts": {
+    "start": "node server-frontend.js",
+    "dev": "node server-frontend.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": ["api", "testing", "frontend"],
+  "author": "",
+  "license": "MIT"
+} 

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Testing Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .config-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        input {
+            padding: 12px;
+            border: 2px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+        
+        .tabs {
+            display: flex;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-right: 1px solid #e5e5e7;
+        }
+        
+        .tab:last-child {
+            border-right: none;
+        }
+        
+        .tab.active {
+            background: #007aff;
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #e5e5e7;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .test-btn {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            background: #0051d5;
+        }
+        
+        .test-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007aff;
+        }
+        
+        .results h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .json-output {
+            background: #1e1e1e;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #d32f2f;
+        }
+        
+        .status-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .endpoint-url {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-bottom: 15px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 API Testing Dashboard</h1>
+            <p>Test the Articulos API endpoints with a clean interface</p>
+        </div>
+        
+        <div class="config-section">
+            <h3>⚙️ Configuration</h3>
+            <div class="config-grid">
+                <div class="input-group">
+                    <label for="apiUrl">API Base URL</label>
+                    <input type="text" id="apiUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+                </div>
+                <div class="input-group">
+                    <label for="apiKey">API Key</label>
+                    <input type="text" id="apiKey" value="SAUxpeWRPHIagHTvYRgMBblxZcfFL9vr" placeholder="Your API Key">
+                </div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('rubros')">📂 Rubros</button>
+            <button class="tab" onclick="switchTab('aplicaciones')">🔍 Aplicaciones</button>
+            <button class="tab" onclick="switchTab('articulos')">📦 Artículos</button>
+        </div>
+        
+        <!-- Rubros Tab -->
+        <div id="rubros-content" class="tab-content active">
+            <h2>📂 Test Rubros Endpoint</h2>
+            <div class="form-section">
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="rubros-search">Search (optional)</label>
+                        <input type="text" id="rubros-search" placeholder="e.g. ZAPATAS">
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testRubros()">Test Rubros</button>
+            </div>
+            <div id="rubros-loading" class="loading">🔄 Loading...</div>
+            <div id="rubros-results"></div>
+        </div>
+        
+        <!-- Aplicaciones Tab -->
+        <div id="aplicaciones-content" class="tab-content">
+            <h2>🔍 Test Aplicaciones Endpoint</h2>
+            <div class="form-section">
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="aplicaciones-search">Search (required)</label>
+                        <input type="text" id="aplicaciones-search" placeholder="e.g. PEUGEOT" required>
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testAplicaciones()">Test Aplicaciones</button>
+            </div>
+            <div id="aplicaciones-loading" class="loading">🔄 Loading...</div>
+            <div id="aplicaciones-results"></div>
+        </div>
+        
+        <!-- Articulos Tab -->
+        <div id="articulos-content" class="tab-content">
+            <h2>📦 Test Artículos Endpoint</h2>
+            <div class="form-section">
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="articulos-rubroId">Rubro ID (optional)</label>
+                        <input type="number" id="articulos-rubroId" placeholder="e.g. 309">
+                    </div>
+                    <div class="input-group">
+                        <label for="articulos-applicationId">Application ID (optional)</label>
+                        <input type="number" id="articulos-applicationId" placeholder="e.g. 2075">
+                    </div>
+                    <div class="input-group">
+                        <label for="articulos-search">Search (optional)</label>
+                        <input type="text" id="articulos-search" placeholder="e.g. JUEGOS">
+                    </div>
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="articulos-onlyWithStock"> Only with Stock
+                        </label>
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testArticulos()">Test Artículos</button>
+            </div>
+            <div id="articulos-loading" class="loading">🔄 Loading...</div>
+            <div id="articulos-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-content').classList.add('active');
+            
+            // Add active class to selected tab
+            event.target.classList.add('active');
+        }
+        
+        // Utility function to make API calls
+        async function makeApiCall(endpoint, params = {}) {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const apiKey = document.getElementById('apiKey').value;
+            
+            // Build URL with parameters
+            const url = new URL(endpoint, apiUrl);
+            
+            // Always add forBot=true
+            url.searchParams.append('forBot', 'true');
+            
+            // Add other parameters
+            Object.keys(params).forEach(key => {
+                if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+                    url.searchParams.append(key, params[key]);
+                }
+            });
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'X-API-Key': apiKey
+                    }
+                });
+                
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                const data = await response.json();
+                
+                return {
+                    success: response.ok,
+                    status: response.status,
+                    statusText: response.statusText,
+                    data: data,
+                    responseTime: responseTime,
+                    url: url.toString()
+                };
+            } catch (error) {
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                return {
+                    success: false,
+                    error: error.message,
+                    responseTime: responseTime,
+                    url: url.toString()
+                };
+            }
+        }
+        
+        // Display results helper
+        function displayResults(containerId, result) {
+            const container = document.getElementById(containerId);
+            
+            let html = `
+                <div class="results">
+                    <div class="endpoint-url">🔗 ${result.url}</div>
+                    <div class="status-info">
+                        <span>Status: <strong>${result.success ? result.status + ' ' + result.statusText : 'Error'}</strong></span>
+                        <span>Response Time: <strong>${result.responseTime}ms</strong></span>
+                    </div>
+            `;
+            
+            if (result.success) {
+                const resultCount = result.data.data ? result.data.data.length : 0;
+                html += `
+                    <h3>✅ Results (${resultCount} items)</h3>
+                    <div class="json-output">${JSON.stringify(result.data, null, 2)}</div>
+                `;
+            } else {
+                html += `
+                    <div class="error">
+                        <h3>❌ Error</h3>
+                        <p>${result.error || 'Request failed'}</p>
+                        ${result.data ? '<div class="json-output">' + JSON.stringify(result.data, null, 2) + '</div>' : ''}
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Test Rubros endpoint
+        async function testRubros() {
+            const loadingEl = document.getElementById('rubros-loading');
+            const resultsEl = document.getElementById('rubros-results');
+            
+            loadingEl.style.display = 'block';
+            resultsEl.innerHTML = '';
+            
+            const search = document.getElementById('rubros-search').value;
+            
+            const params = {};
+            if (search) params.search = search;
+            
+            const result = await makeApiCall('/rubros', params);
+            
+            loadingEl.style.display = 'none';
+            displayResults('rubros-results', result);
+        }
+        
+        // Test Aplicaciones endpoint
+        async function testAplicaciones() {
+            const loadingEl = document.getElementById('aplicaciones-loading');
+            const resultsEl = document.getElementById('aplicaciones-results');
+            const searchInput = document.getElementById('aplicaciones-search');
+            
+            if (!searchInput.value.trim()) {
+                resultsEl.innerHTML = '<div class="error"><h3>❌ Error</h3><p>Search parameter is required for Aplicaciones endpoint</p></div>';
+                return;
+            }
+            
+            loadingEl.style.display = 'block';
+            resultsEl.innerHTML = '';
+            
+            const params = {
+                search: searchInput.value
+            };
+            
+            const result = await makeApiCall('/aplicaciones', params);
+            
+            loadingEl.style.display = 'none';
+            displayResults('aplicaciones-results', result);
+        }
+        
+        // Test Articulos endpoint
+        async function testArticulos() {
+            const loadingEl = document.getElementById('articulos-loading');
+            const resultsEl = document.getElementById('articulos-results');
+            
+            const rubroId = document.getElementById('articulos-rubroId').value;
+            const applicationId = document.getElementById('articulos-applicationId').value;
+            const search = document.getElementById('articulos-search').value;
+            const onlyWithStock = document.getElementById('articulos-onlyWithStock').checked;
+            
+            // Check if at least one parameter is provided
+            if (!rubroId && !applicationId && !search) {
+                resultsEl.innerHTML = '<div class="error"><h3>❌ Error</h3><p>At least one parameter (rubroId, applicationId, or search) is required for Artículos endpoint</p></div>';
+                return;
+            }
+            
+            loadingEl.style.display = 'block';
+            resultsEl.innerHTML = '';
+            
+            const params = {};
+            if (rubroId) params.rubroId = rubroId;
+            if (applicationId) params.applicationId = applicationId;
+            if (search) params.search = search;
+            if (onlyWithStock) params.onlyWithStock = 'true';
+            
+            const result = await makeApiCall('/articles', params);
+            
+            loadingEl.style.display = 'none';
+            displayResults('articulos-results', result);
+        }
+        
+        // Auto-focus on search inputs when tabs are switched
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set initial focus
+            document.getElementById('rubros-search').focus();
+        });
+    </script>
+</body>
+</html> 
