@@ -366,9 +366,13 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
     }
   }
 
-  // Add stock filter to WHERE clause if needed
+  // Add stock filter to WHERE clause if needed - include articles with substitute stock
   const stockFilter = onlyWithStock 
-    ? "AND s.EXISTENCIA > 0" 
+    ? `AND (s.EXISTENCIA > 0 OR EXISTS (
+        SELECT 1 FROM ART_ART aa_stock 
+        INNER JOIN STOCK s_sub ON aa_stock.ART_REL_ID = s_sub.ART_ID AND s_sub.DEP_ID = 12 
+        WHERE aa_stock.ART_ID = a.ART_ID AND aa_stock.ART_REL_TIPO_ID = 1 AND s_sub.EXISTENCIA > 0
+      ))` 
     : "";
   
   // Determine if we need to join STOCK table
@@ -592,7 +596,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           const precio = precioItem ? precioItem.PR_FINAL : null;
 
           const stockItem = responses.stock.find(s => s.ART_ID === id);
-          const stock = stockItem ? stockItem.EXISTENCIA : null;
+          let stock = stockItem ? stockItem.EXISTENCIA : null;
 
           // Process complementarios with full article details
           const complementarios = responses.rels
@@ -607,8 +611,8 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
                 // For now, set medida and años to null for related articles
                 // TODO: Update related articles query to include MED and ART_APLICACION fields
-                  
-                return {
+                
+                const complementarioData = {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
@@ -618,6 +622,14 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
+
+                // Only include detalle if it has a value
+                const detalle = safeTrim(relatedArticle.DESC_ETIQUETA);
+                if (detalle) {
+                  complementarioData.detalle = detalle;
+                }
+
+                return complementarioData;
               }
               // Fallback to just ID if details not found
               return { id: r.ART_REL_ID };
@@ -636,8 +648,8 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
                 // For now, set medida and años to null for related articles
                 // TODO: Update related articles query to include MED and ART_APLICACION fields
-                  
-                return {
+                
+                const sustitutoData = {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
@@ -647,10 +659,24 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
+
+                // Only include detalle if it has a value
+                const detalle = safeTrim(relatedArticle.DESC_ETIQUETA);
+                if (detalle) {
+                  sustitutoData.detalle = detalle;
+                }
+
+                return sustitutoData;
               }
               // Fallback to just ID if details not found
               return { id: r.ART_REL_ID };
             });
+
+          // Check if sustitutos have stock when main article doesn't
+          const sustitutosWithStock = sustitutos.filter(s => s.stock && s.stock > 0);
+          if ((!stock || stock <= 0) && sustitutosWithStock.length > 0) {
+            stock = "0 - Posee stock de sustitutos";
+          }
 
             // Convert buffer to string if needed
             const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
@@ -727,13 +753,23 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             descripcion: safeTrim(descripcion) || '',
             medida: safeTrim(a.MED),
             años,
-            nota: safeTrim(a.ART_APLICACION_NOTAS),
-            detalle: safeTrim(a.DESC_ETIQUETA) || null,
             precio,
             stock,
             complementarios,
             sustitutos
           };
+
+          // Only include nota if it has a value
+          const nota = safeTrim(a.ART_APLICACION_NOTAS);
+          if (nota && nota.trim() !== '') {
+            articleData.nota = nota;
+          }
+
+          // Only include detalle if it has a value
+          const detalle = safeTrim(a.DESC_ETIQUETA);
+          if (detalle && detalle.trim() !== '') {
+            articleData.detalle = detalle;
+          }
 
           // No aplicaciones field - not needed for this endpoint
 
@@ -833,9 +869,13 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
     }
   }
   
-  // Add stock filter to WHERE clause if needed
+  // Add stock filter to WHERE clause if needed - include articles with substitute stock
   const stockFilter = onlyWithStock 
-    ? "AND s.EXISTENCIA > 0" 
+    ? `AND (s.EXISTENCIA > 0 OR EXISTS (
+        SELECT 1 FROM ART_ART aa_stock 
+        INNER JOIN STOCK s_sub ON aa_stock.ART_REL_ID = s_sub.ART_ID AND s_sub.DEP_ID = 12 
+        WHERE aa_stock.ART_ID = a.ART_ID AND aa_stock.ART_REL_TIPO_ID = 1 AND s_sub.EXISTENCIA > 0
+      ))` 
     : "";
   
   // Determine if we need to join STOCK table
@@ -1021,7 +1061,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
           const precio = precioItem ? precioItem.PR_FINAL : null;
 
           const stockItem = responses.stock.find(s => s.ART_ID === id);
-          const stock = stockItem ? stockItem.EXISTENCIA : null;
+          let stock = stockItem ? stockItem.EXISTENCIA : null;
 
           // Process complementarios with full article details
           const complementarios = (responses.rels || [])
@@ -1036,8 +1076,8 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
 
                 // For now, set medida and años to null for related articles
                 // TODO: Update related articles query to include MED and ART_APLICACION fields
-                  
-                return {
+                
+                const complementarioData = {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
@@ -1047,6 +1087,14 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
+
+                // Only include detalle if it has a value
+                const detalle = safeTrim(relatedArticle.DESC_ETIQUETA);
+                if (detalle) {
+                  complementarioData.detalle = detalle;
+                }
+
+                return complementarioData;
               }
               // Fallback to just ID if details not found
               return { id: r.ART_REL_ID };
@@ -1065,8 +1113,8 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
 
                 // For now, set medida and años to null for related articles
                 // TODO: Update related articles query to include MED and ART_APLICACION fields
-                  
-                return {
+                
+                const sustitutoData = {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
@@ -1076,10 +1124,24 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   precio: relatedArticle.PRECIO,
                   stock: relatedArticle.STOCK
                 };
+
+                // Only include detalle if it has a value
+                const detalle = safeTrim(relatedArticle.DESC_ETIQUETA);
+                if (detalle) {
+                  sustitutoData.detalle = detalle;
+                }
+
+                return sustitutoData;
               }
               // Fallback to just ID if details not found
               return { id: r.ART_REL_ID };
             });
+
+          // Check if sustitutos have stock when main article doesn't
+          const sustitutosWithStock = sustitutos.filter(s => s.stock && s.stock > 0);
+          if ((!stock || stock <= 0) && sustitutosWithStock.length > 0) {
+            stock = "0 - Posee stock de sustitutos";
+          }
 
           // Convert buffer to string if needed
           const descripcion = a.CALC_DESC_EXTEND instanceof Buffer 
@@ -1140,13 +1202,23 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             descripcion: safeTrim(descripcion) || '',
             medida: safeTrim(a.MED),
             años,
-            nota: safeTrim(a.ART_APLICACION_NOTAS),
-            detalle: safeTrim(a.DESC_ETIQUETA) || null,
             precio,
             stock,
             complementarios,
             sustitutos
           };
+
+          // Only include nota if it has a value
+          const nota = safeTrim(a.ART_APLICACION_NOTAS);
+          if (nota && nota.trim() !== '') {
+            articleData.nota = nota;
+          }
+
+          // Only include detalle if it has a value
+          const detalle = safeTrim(a.DESC_ETIQUETA);
+          if (detalle && detalle.trim() !== '') {
+            articleData.detalle = detalle;
+          }
 
           // No aplicaciones field - not needed for this endpoint
 
