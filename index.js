@@ -785,6 +785,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
 // New endpoint: Get articles by application IDs
 app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
+  console.log('🚀 /articles/by-applications endpoint called');
   const startTime = Date.now(); // Performance monitoring
   const onlyWithStock = req.query.onlyWithStock === 'true'; // Stock filter
   
@@ -1086,12 +1087,14 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
           const desde = safeTrim(a.ART_APLICACION_DESDE);
           const hasta = safeTrim(a.ART_APLICACION_HASTA);
           
-          // Debug logging for first few articles
+          // Debug logging for articles
           console.log(`🔍 DEBUG By-App Article ${id} AÑOS:`, {
             ART_APLICACION_DESDE: desde,
             ART_APLICACION_HASTA: hasta,
             desde_type: typeof desde,
-            hasta_type: typeof hasta
+            hasta_type: typeof hasta,
+            raw_desde: a.ART_APLICACION_DESDE,
+            raw_hasta: a.ART_APLICACION_HASTA
           });
           
           if (desde || hasta) {
