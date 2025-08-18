@@ -1063,6 +1063,102 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
   });
 });
 
+// Rubros endpoint - return all ARTRUBROS with optional search
+app.get('/rubros', authenticateAPIKey, (req, res) => {
+  const startTime = Date.now();
+  const search = req.query.search;
+  const forBot = req.query.forBot === 'true';
+
+  // Filter rubros by EMP_ID = 2
+  const baseWhere = "r.EMP_ID = 2";
+  
+  // Create search filter for RUBRO_PATH and RUBRO
+  let searchFilter = "";
+  if (search && search.trim() !== '') {
+    const words = search.trim().split(/\s+/)
+      .filter(word => word.length > 0)
+      .slice(0, 5); // Limit to 5 words max for performance
+    
+    if (words.length > 0) {
+      const wordConditions = words.map(word => {
+        const cleanWord = word.replace(/'/g, "''").toUpperCase();
+        return `(UPPER(r.RUBRO_PATH) LIKE '%${cleanWord}%' OR UPPER(r.RUBRO) LIKE '%${cleanWord}%')`;
+      });
+      
+      searchFilter = `AND (${wordConditions.join(' AND ')})`;
+    }
+  }
+
+  // Query to get all rubros
+  const sql = `
+    SELECT 
+      r.RUBRO_ID,
+      r.EMP_ID,
+      r.RUBRO_PADRE_ID,
+      r.RUBRO,
+      r.RUBRO_PATH,
+      r.IMAGEN,
+      r.NOTA,
+      r.NOTA_MEMO,
+      COUNT(a.ART_ID) as ARTICLE_COUNT
+    FROM ARTRUBROS r
+    LEFT JOIN ARTICULOS a ON r.RUBRO_ID = a.RUBRO_ID AND a.EMP_ID = 2
+    WHERE ${baseWhere} ${searchFilter}
+    GROUP BY r.RUBRO_ID, r.EMP_ID, r.RUBRO_PADRE_ID, r.RUBRO, r.RUBRO_PATH, r.IMAGEN, r.NOTA, r.NOTA_MEMO
+    ORDER BY r.RUBRO_PATH
+  `;
+
+  Firebird.attach(dbOptions, (err, db) => {
+    if (err) {
+      console.error('DB connection failed:', err);
+      return res.status(500).json({ 
+        error: 'Database connection failed',
+        details: err.message 
+      });
+    }
+
+    db.query(sql, (err, rubros) => {
+      const endTime = Date.now();
+      const queryTime = endTime - startTime;
+
+      if (err) {
+        db.detach();
+        console.error('Rubros query failed:', err);
+        return res.status(500).json({ 
+          error: 'Query failed', 
+          details: err.message 
+        });
+      }
+
+      // Process results and safely trim strings
+      const result = rubros.map(rubro => ({
+        id: rubro.RUBRO_ID,
+        empId: rubro.EMP_ID,
+        rubroPadreId: rubro.RUBRO_PADRE_ID,
+        rubro: safeTrim(rubro.RUBRO) || '',
+        rubroPath: safeTrim(rubro.RUBRO_PATH) || '',
+        imagen: safeTrim(rubro.IMAGEN),
+        nota: safeTrim(rubro.NOTA),
+        notaMemo: safeTrim(rubro.NOTA_MEMO),
+        articleCount: rubro.ARTICLE_COUNT || 0
+      }));
+
+      db.detach();
+      
+      console.log(`📂 Rubros: "${search || 'all'}" | ${forBot ? 'Bot' : 'Web'} | Results: ${result.length} | Time: ${queryTime}ms`);
+      
+      res.json({
+        data: result,
+        meta: {
+          queryTime: queryTime,
+          totalCount: result.length,
+          searchTerm: search || null
+        }
+      });
+    });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 API listening at http://localhost:${PORT}`);
 });
