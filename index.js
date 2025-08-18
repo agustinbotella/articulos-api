@@ -741,6 +741,18 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
 
           // Only include nota if it has a value
           const nota = safeTrim(a.ART_APLICACION_NOTAS);
+          
+          // Debug logging for article 78670
+          if (id === 78670) {
+            console.log(`🔍 DEBUG Article 78670 NOTA:`, {
+              ART_APLICACION_NOTAS: a.ART_APLICACION_NOTAS,
+              ART_APLICACION_NOTAS_type: typeof a.ART_APLICACION_NOTAS,
+              nota_after_safeTrim: nota,
+              nota_type: typeof nota,
+              nota_length: nota ? nota.length : 'null'
+            });
+          }
+          
           if (nota && nota.trim() !== '') {
             articleData.nota = nota;
           }
