@@ -596,7 +596,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           const precio = precioItem ? Math.floor(precioItem.PR_FINAL) : null;
 
           const stockItem = responses.stock.find(s => s.ART_ID === id);
-          let stock = stockItem ? stockItem.EXISTENCIA : null;
+          let stock = stockItem ? (stockItem.EXISTENCIA || 0) : 0;
 
           // Process complementarios with full article details
           const complementarios = responses.rels
@@ -618,7 +618,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   marca: safeTrim(relatedArticle.MARCA),
                   descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
-                  stock: relatedArticle.STOCK
+                  stock: relatedArticle.STOCK || 0
                 };
 
                 // Note: medida and años are null for related articles since we don't fetch that data
@@ -652,7 +652,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   marca: safeTrim(relatedArticle.MARCA),
                   descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
-                  stock: relatedArticle.STOCK
+                  stock: relatedArticle.STOCK || 0
                 };
 
                 // Note: medida and años are null for related articles since we don't fetch that data
@@ -1060,7 +1060,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
           const precio = precioItem ? Math.floor(precioItem.PR_FINAL) : null;
 
           const stockItem = responses.stock.find(s => s.ART_ID === id);
-          let stock = stockItem ? stockItem.EXISTENCIA : null;
+          let stock = stockItem ? (stockItem.EXISTENCIA || 0) : 0;
 
           // Process complementarios with full article details
           const complementarios = (responses.rels || [])
@@ -1082,7 +1082,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   marca: safeTrim(relatedArticle.MARCA),
                   descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
-                  stock: relatedArticle.STOCK
+                  stock: relatedArticle.STOCK || 0
                 };
 
                 // Note: medida and años are null for related articles since we don't fetch that data
@@ -1116,7 +1116,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
                   marca: safeTrim(relatedArticle.MARCA),
                   descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
-                  stock: relatedArticle.STOCK
+                  stock: relatedArticle.STOCK || 0
                 };
 
                 // Note: medida and años are null for related articles since we don't fetch that data
