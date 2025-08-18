@@ -592,10 +592,15 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
-                  descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK || 0
                 };
+
+                // Only include descripcion if it has a value
+                const relatedDesc = safeTrim(relatedDescripcion);
+                if (relatedDesc && relatedDesc.trim() !== '') {
+                  complementarioData.descripcion = relatedDesc;
+                }
 
                 // Note: medida and años are null for related articles since we don't fetch that data
                 // They will be excluded from the response
@@ -626,10 +631,15 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
                   id: relatedArticle.ART_ID,
                   articulo: safeTrim(relatedArticle.RUBRO_NOMBRE),
                   marca: safeTrim(relatedArticle.MARCA),
-                  descripcion: safeTrim(relatedDescripcion) || '',
                   precio: relatedArticle.PRECIO ? Math.floor(relatedArticle.PRECIO) : null,
                   stock: relatedArticle.STOCK || 0
                 };
+
+                // Only include descripcion if it has a value
+                const relatedDesc = safeTrim(relatedDescripcion);
+                if (relatedDesc && relatedDesc.trim() !== '') {
+                  sustitutoData.descripcion = relatedDesc;
+                }
 
                 // Note: medida and años are null for related articles since we don't fetch that data
                 // They will be excluded from the response
@@ -703,9 +713,14 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
           const articleData = {
             id,
             articulo: safeTrim(a.RUBRO_NOMBRE),
-            marca: safeTrim(a.MARCA),
-            descripcion: safeTrim(descripcion) || ''
+            marca: safeTrim(a.MARCA)
           };
+
+          // Only include descripcion if it has a value
+          const desc = safeTrim(descripcion);
+          if (desc && desc.trim() !== '') {
+            articleData.descripcion = desc;
+          }
 
           // Only include medida if it has a value (after descripcion)
           const medida = safeTrim(a.MED);
