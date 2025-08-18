@@ -694,8 +694,25 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             const hasta = safeTrim(a.ART_APLICACION_HASTA);
             
             if (desde || hasta) {
-              const desdeYear = desde ? desde.substring(0, 4) : '';
-              const hastaYear = hasta ? hasta.substring(0, 4) : '';
+              // Parse comma-separated dates and extract years
+              let desdeYear = '';
+              let hastaYear = '';
+              
+              if (desde) {
+                // Take the first date from comma-separated list and extract year
+                const firstDesde = desde.split(',')[0].trim();
+                if (firstDesde.length >= 4) {
+                  desdeYear = firstDesde.substring(0, 4);
+                }
+              }
+              
+              if (hasta) {
+                // Take the first date from comma-separated list and extract year
+                const firstHasta = hasta.split(',')[0].trim();
+                if (firstHasta.length >= 4) {
+                  hastaYear = firstHasta.substring(0, 4);
+                }
+              }
               
               if (desdeYear && hastaYear) {
                 años = `Desde: ${desdeYear} - Hasta: ${hastaYear}`;
@@ -1070,8 +1087,25 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
           const hasta = safeTrim(a.ART_APLICACION_HASTA);
           
           if (desde || hasta) {
-            const desdeYear = desde ? desde.substring(0, 4) : '';
-            const hastaYear = hasta ? hasta.substring(0, 4) : '';
+            // Parse comma-separated dates and extract years
+            let desdeYear = '';
+            let hastaYear = '';
+            
+            if (desde) {
+              // Take the first date from comma-separated list and extract year
+              const firstDesde = desde.split(',')[0].trim();
+              if (firstDesde.length >= 4) {
+                desdeYear = firstDesde.substring(0, 4);
+              }
+            }
+            
+            if (hasta) {
+              // Take the first date from comma-separated list and extract year
+              const firstHasta = hasta.split(',')[0].trim();
+              if (firstHasta.length >= 4) {
+                hastaYear = firstHasta.substring(0, 4);
+              }
+            }
             
             if (desdeYear && hastaYear) {
               años = `Desde: ${desdeYear} - Hasta: ${hastaYear}`;
