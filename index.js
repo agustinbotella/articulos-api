@@ -421,28 +421,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
       (SELECT LIST(aa_nota.NOTA, ', ') 
        FROM ART_APLICACION aa_nota 
        WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
-      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-           CASE WHEN (SELECT LIST(aa_desde.DESDE, ', ') 
-                      FROM ART_APLICACION aa_desde 
-                      WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
-                THEN ' DESDE ' || (SELECT LIST(aa_desde.DESDE, ', ') 
-                                   FROM ART_APLICACION aa_desde 
-                                   WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL)
-                ELSE '' END ||
-           CASE WHEN (SELECT LIST(aa_hasta.HASTA, ', ') 
-                      FROM ART_APLICACION aa_hasta 
-                      WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) IS NOT NULL
-                THEN ' HASTA ' || (SELECT LIST(aa_hasta.HASTA, ', ') 
-                                   FROM ART_APLICACION aa_hasta 
-                                   WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL)
-                ELSE '' END ||
-           CASE WHEN (SELECT LIST(aa_desc.NOTA, ', ') 
-                      FROM ART_APLICACION aa_desc 
-                      WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL) IS NOT NULL 
-                THEN ' - Nota: ' || (SELECT LIST(aa_desc.NOTA, ', ') 
-                                     FROM ART_APLICACION aa_desc 
-                                     WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL)
-                ELSE '' END) AS CALC_DESC_EXTEND,
+      a.NOTA AS CALC_DESC_EXTEND,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
@@ -748,7 +727,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
             descripcion: safeTrim(descripcion) || '',
             medida: safeTrim(a.MED),
             años,
-            nota: safeTrim(a.NOTA),
+            nota: safeTrim(a.ART_APLICACION_NOTAS),
             detalle: safeTrim(a.DESC_ETIQUETA) || null,
             precio,
             stock,
@@ -897,28 +876,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
       (SELECT LIST(aa_nota.NOTA, ', ') 
        FROM ART_APLICACION aa_nota 
        WHERE aa_nota.ART_ID = a.ART_ID AND aa_nota.NOTA IS NOT NULL) AS ART_APLICACION_NOTAS,
-      TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-           CASE WHEN (SELECT LIST(aa_desde.DESDE, ', ') 
-                      FROM ART_APLICACION aa_desde 
-                      WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) IS NOT NULL
-                THEN ' DESDE ' || (SELECT LIST(aa_desde.DESDE, ', ') 
-                                   FROM ART_APLICACION aa_desde 
-                                   WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL)
-                ELSE '' END ||
-           CASE WHEN (SELECT LIST(aa_hasta.HASTA, ', ') 
-                      FROM ART_APLICACION aa_hasta 
-                      WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) IS NOT NULL
-                THEN ' HASTA ' || (SELECT LIST(aa_hasta.HASTA, ', ') 
-                                   FROM ART_APLICACION aa_hasta 
-                                   WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL)
-                ELSE '' END ||
-           CASE WHEN (SELECT LIST(aa_desc.NOTA, ', ') 
-                      FROM ART_APLICACION aa_desc 
-                      WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL) IS NOT NULL 
-                THEN ' - Nota: ' || (SELECT LIST(aa_desc.NOTA, ', ') 
-                                     FROM ART_APLICACION aa_desc 
-                                     WHERE aa_desc.ART_ID = a.ART_ID AND aa_desc.NOTA IS NOT NULL)
-                ELSE '' END) AS CALC_DESC_EXTEND,
+      a.NOTA AS CALC_DESC_EXTEND,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
@@ -1182,7 +1140,7 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
             descripcion: safeTrim(descripcion) || '',
             medida: safeTrim(a.MED),
             años,
-            nota: safeTrim(a.NOTA),
+            nota: safeTrim(a.ART_APLICACION_NOTAS),
             detalle: safeTrim(a.DESC_ETIQUETA) || null,
             precio,
             stock,
