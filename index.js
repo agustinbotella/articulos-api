@@ -64,7 +64,7 @@ function safeTrim(value) {
 }
 
 // Basic test endpoint
-app.get('/', (req, res) => {
+app.get('/', authenticateAPIKey, (req, res) => {
   res.send('API is working');
 });
 

@@ -27,7 +27,7 @@ Search for articles with pagination, filtering, and full relationship data.
 - `search` (string, required): Search term - supports word-based search
 - `page` (integer, optional): Page number (default: 1)
 - `limit` (integer, optional): Results per page (default: 20, max: 100)
-- `onlyWithStock` (boolean, optional): Filter only articles with stock (default: false)
+- `onlyWithStock` (boolean, optional): Filter only articles with stock OR articles with substitute stock (default: false)
 - `applicationId` (integer, optional): Filter articles by specific application ID
 - `rubroId` (integer, optional): Filter articles by specific rubro ID
 
@@ -39,7 +39,7 @@ GET /articles?search=bujia
 # Search with pagination
 GET /articles?search=bujia&page=2&limit=50
 
-# Search only articles with stock
+# Search only articles with stock (includes articles with substitute stock)
 GET /articles?search=bujia&onlyWithStock=true
 
 # Filter by specific application
@@ -63,22 +63,19 @@ GET /articles?search=gol power bujia
       "id": 61085,
       "articulo": "Encendido",
       "marca": "BOSCH", 
-      "descripcion": "Bujía Gol Power",
+      "descripcion": "Producto de alta demanda",
       "medida": "14mm",
       "años": "Desde: 2018 - Hasta: 2020",
-      "nota": "Producto de alta demanda",
-      "detalle": "Bujía de alta performance",
-      "precio": 1234.56,
+      "nota": "Aplicación específica para motores turbo",
+      "precio": 1234,
       "stock": 42,
       "complementarios": [
         {
           "id": 208,
           "articulo": "FILTROS > ACEITE",
           "marca": "MANN",
-          "descripcion": "Filtro de Aceite",
-          "medida": null,
-          "años": null,
-          "precio": 890.50,
+          "descripcion": "Filtro de Aceite Premium",
+          "precio": 890,
           "stock": 15
         }
       ],
@@ -88,10 +85,30 @@ GET /articles?search=gol power bujia
           "articulo": "ENCENDIDO > BUJIAS",
           "marca": "NGK",
           "descripcion": "Bujía Gol Power Alternativa",
-          "medida": null,
-          "años": null,
-          "precio": 1100.00,
+          "precio": 1100,
           "stock": 8
+        }
+      ]
+    },
+    {
+      "id": 78670,
+      "articulo": "JUEGOS DE JUNTAS DE MOTOR",
+      "marca": "TARANTO",
+      "descripcion": "MATERIAL DE JTC : FIBRA - CON RETENES",
+      "medida": "1M",
+      "años": "Desde: 2000 - Hasta: 2010",
+      "nota": "HOLA BOTE",
+      "precio": 130589,
+      "stock": "0 - Posee stock de sustitutos",
+      "complementarios": [],
+      "sustitutos": [
+        {
+          "id": 78671,
+          "articulo": "JUEGOS DE JUNTAS DE MOTOR",
+          "marca": "VICTOR REINZ",
+          "descripcion": "JTC SIMILAR CALIDAD",
+          "precio": 125000,
+          "stock": 5
         }
       ]
     }
@@ -116,14 +133,14 @@ GET /articles?search=gol power bujia
 ### 3. Get Articles by Application IDs
 **GET** `/articles/by-applications`
 
-Retrieve all articles that belong to specific application IDs. This endpoint requires application ID(s) and returns all matching articles without pagination.
+Retrieve all articles that belong to specific application IDs, search terms, or rubro filters. This endpoint returns all matching articles without pagination.
 
 **Parameters:**
 - `applicationId` (integer, optional): Single application ID to filter by
 - `applicationIds` (string/array, optional): Multiple application IDs (comma-separated string or array)
 - `search` (string, optional): Search term - supports word-based search across articulo (RUBRO_PATH)
 - `rubroId` (integer, optional): Filter articles by specific rubro ID
-- `onlyWithStock` (boolean, optional): Filter only articles with stock (default: false)
+- `onlyWithStock` (boolean, optional): Filter only articles with stock OR articles with substitute stock (default: false)
 
 **Note:** At least one of `applicationId`, `applicationIds`, `search`, or `rubroId` must be provided. If none are provided, the endpoint returns a 400 error.
 
@@ -156,22 +173,19 @@ GET /articles/by-applications?applicationIds=365,421&search=MOTOR&rubroId=45&onl
       "id": 61085,
       "articulo": "Encendido",
       "marca": "BOSCH", 
-      "descripcion": "Bujía Gol Power",
+      "descripcion": "Producto de alta demanda",
       "medida": "14mm",
       "años": "Desde: 2018 - Hasta: 2020",
-      "nota": "Producto de alta demanda",
-      "detalle": "Bujía de alta performance",
-      "precio": 1234.56,
+      "nota": "Aplicación específica para motores turbo",
+      "precio": 1234,
       "stock": 42,
       "complementarios": [
         {
           "id": 208,
           "articulo": "FILTROS > ACEITE",
           "marca": "MANN",
-          "descripcion": "Filtro de Aceite",
-          "medida": null,
-          "años": null,
-          "precio": 890.50,
+          "descripcion": "Filtro de Aceite Premium",
+          "precio": 890,
           "stock": 15
         }
       ],
@@ -181,9 +195,7 @@ GET /articles/by-applications?applicationIds=365,421&search=MOTOR&rubroId=45&onl
           "articulo": "ENCENDIDO > BUJIAS",
           "marca": "NGK",
           "descripcion": "Bujía Gol Power Alternativa",
-          "medida": null,
-          "años": null,
-          "precio": 1100.00,
+          "precio": 1100,
           "stock": 8
         }
       ]
@@ -196,6 +208,22 @@ GET /articles/by-applications?applicationIds=365,421&search=MOTOR&rubroId=45&onl
   }
 }
 ```
+
+**Response Fields:**
+- `id`: Article ID (ART_ID)
+- `articulo`: Article category/rubro name (RUBRO_PATH)
+- `marca`: Brand name (MARCA)
+- `descripcion`: Article description (ARTICULOS.NOTA)
+- `medida`: Measurements/dimensions (MED) - only included if has value
+- `años`: Year range from applications (formatted as "Desde: YYYY - Hasta: YYYY") - only included if has value
+- `nota`: Application-specific notes (ART_APLICACION.NOTA) - only included if has value
+- `precio`: Price (integer, no decimals)
+- `stock`: Stock quantity or special message:
+  - Number: actual stock available
+  - `0`: no stock
+  - `"0 - Posee stock de sustitutos"`: no main stock but substitutes have stock
+- `complementarios`: Array of complementary articles
+- `sustitutos`: Array of substitute articles
 
 **Error Response (when no parameters provided):**
 ```json
@@ -415,11 +443,15 @@ All endpoints support cross-origin requests with the following headers:
 - `Access-Control-Allow-Origin: *`
 - `Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept`
 
-### Search Features (Articles endpoint)
+### Search Features (Articles endpoints)
 - **Word-based search:** Search terms are split into words, all must be present
 - **Case insensitive:** Automatic uppercase conversion for consistency
 - **Performance optimization:** Limited to 5 words maximum
 - **SQL injection protection:** Proper string escaping
+- **Smart stock filtering:** `onlyWithStock=true` includes articles with substitute stock
+- **Conditional fields:** Fields like `medida`, `años`, and `nota` only appear when they have values
+- **Integer prices:** All prices returned as integers (no decimals)
+- **Smart stock display:** Shows "0 - Posee stock de sustitutos" when main article has no stock but substitutes do
 
 ### Error Responses
 All endpoints return consistent error format:
@@ -489,7 +521,7 @@ curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365,421,
 # Test articles by-applications with search
 curl "http://192.168.1.106:3000/articles/by-applications?search=FILTROS"
 
-# Test with filters
+# Test with filters (includes substitute stock)
 curl "http://192.168.1.106:3000/articles?search=bujia&onlyWithStock=true&rubroId=45&limit=10"
 curl "http://192.168.1.106:3000/articles/by-applications?applicationIds=365&search=MOTOR&rubroId=45&onlyWithStock=true"
 ```
