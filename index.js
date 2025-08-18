@@ -403,16 +403,13 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
       a.ART_ID,
       a.MED, 
       a.NOTA,
-      (SELECT FIRST 1 aa_desde.DESDE 
-       FROM ART_APLICACION aa_desde 
-       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) AS ART_APLICACION_DESDE,
-      (SELECT FIRST 1 aa_hasta.HASTA 
-       FROM ART_APLICACION aa_hasta 
-       WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) AS ART_APLICACION_HASTA,
+      aa.DESDE AS ART_APLICACION_DESDE,
+      aa.HASTA AS ART_APLICACION_HASTA,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
       ARTICULOS a
+    LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
@@ -512,33 +509,16 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
         const relatedArticlesQuery = `
           SELECT 
             a.ART_ID,
-            TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-                 CASE WHEN (SELECT LIST(aa_desde_rel.DESDE, ', ') 
-                            FROM ART_APLICACION aa_desde_rel 
-                            WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
-                      THEN ' DESDE ' || (SELECT LIST(aa_desde_rel.DESDE, ', ') 
-                                         FROM ART_APLICACION aa_desde_rel 
-                                         WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL)
-                      ELSE '' END ||
-                 CASE WHEN (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
-                            FROM ART_APLICACION aa_hasta_rel 
-                            WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) IS NOT NULL
-                      THEN ' HASTA ' || (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
-                                         FROM ART_APLICACION aa_hasta_rel 
-                                         WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL)
-                      ELSE '' END ||
-                 CASE WHEN (SELECT LIST(aa_rel.NOTA, ', ') 
-                            FROM ART_APLICACION aa_rel 
-                            WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
-                      THEN ' - Nota: ' || (SELECT LIST(aa_rel.NOTA, ', ') 
-                                           FROM ART_APLICACION aa_rel 
-                                           WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
-                      ELSE '' END) AS CALC_DESC_EXTEND,
+            a.MED,
+            a.NOTA,
+            aa.DESDE AS ART_APLICACION_DESDE,
+            aa.HASTA AS ART_APLICACION_HASTA,
             m.MARCA,
             r.RUBRO_PATH AS RUBRO_NOMBRE,
             lp.PR_FINAL as PRECIO,
             s.EXISTENCIA as STOCK
           FROM ARTICULOS a
+          LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID
           LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
           LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
           LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
@@ -821,16 +801,13 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
       a.ART_ID,
       a.MED, 
       a.NOTA,
-      (SELECT FIRST 1 aa_desde.DESDE 
-       FROM ART_APLICACION aa_desde 
-       WHERE aa_desde.ART_ID = a.ART_ID AND aa_desde.DESDE IS NOT NULL) AS ART_APLICACION_DESDE,
-      (SELECT FIRST 1 aa_hasta.HASTA 
-       FROM ART_APLICACION aa_hasta 
-       WHERE aa_hasta.ART_ID = a.ART_ID AND aa_hasta.HASTA IS NOT NULL) AS ART_APLICACION_HASTA,
+      aa.DESDE AS ART_APLICACION_DESDE,
+      aa.HASTA AS ART_APLICACION_HASTA,
       m.MARCA,
       r.RUBRO_PATH AS RUBRO_NOMBRE
     FROM
       ARTICULOS a
+    LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID
     LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
     LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
     ${stockJoin}
@@ -905,33 +882,16 @@ app.get('/articles/by-applications', authenticateAPIKey, (req, res) => {
         const relatedArticlesQuery = `
           SELECT 
             a.ART_ID,
-            TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
-                 CASE WHEN (SELECT LIST(aa_desde_rel.DESDE, ', ') 
-                            FROM ART_APLICACION aa_desde_rel 
-                            WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
-                      THEN ' DESDE ' || (SELECT LIST(aa_desde_rel.DESDE, ', ') 
-                                         FROM ART_APLICACION aa_desde_rel 
-                                         WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL)
-                      ELSE '' END ||
-                 CASE WHEN (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
-                            FROM ART_APLICACION aa_hasta_rel 
-                            WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL) IS NOT NULL
-                      THEN ' HASTA ' || (SELECT LIST(aa_hasta_rel.HASTA, ', ') 
-                                         FROM ART_APLICACION aa_hasta_rel 
-                                         WHERE aa_hasta_rel.ART_ID = a.ART_ID AND aa_hasta_rel.HASTA IS NOT NULL)
-                      ELSE '' END ||
-                 CASE WHEN (SELECT LIST(aa_rel.NOTA, ', ') 
-                            FROM ART_APLICACION aa_rel 
-                            WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL) IS NOT NULL 
-                      THEN ' - Nota: ' || (SELECT LIST(aa_rel.NOTA, ', ') 
-                                           FROM ART_APLICACION aa_rel 
-                                           WHERE aa_rel.ART_ID = a.ART_ID AND aa_rel.NOTA IS NOT NULL)
-                      ELSE '' END) AS CALC_DESC_EXTEND,
+            a.MED,
+            a.NOTA,
+            aa.DESDE AS ART_APLICACION_DESDE,
+            aa.HASTA AS ART_APLICACION_HASTA,
             m.MARCA,
             r.RUBRO_PATH AS RUBRO_NOMBRE,
             lp.PR_FINAL as PRECIO,
             s.EXISTENCIA as STOCK
           FROM ARTICULOS a
+          LEFT JOIN ART_APLICACION aa ON a.ART_ID = aa.ART_ID
           LEFT JOIN MARCAS m ON a.MARCA_ID = m.MARCA_ID
           LEFT JOIN ARTRUBROS r ON a.RUBRO_ID = r.RUBRO_ID
           LEFT JOIN ARTLPR lp ON a.ART_ID = lp.ART_ID AND lp.LISTA_ID = 7
