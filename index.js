@@ -834,7 +834,7 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
     }
   }
 
-  // Query to get all rubros
+  // Query to get all rubros - filter out those with null/empty NOTA or NOTA_MEMO
   const sql = `
           SELECT 
       r.RUBRO_ID,
@@ -849,6 +849,8 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
     FROM ARTRUBROS r
     LEFT JOIN ARTICULOS a ON r.RUBRO_ID = a.RUBRO_ID AND a.EMP_ID = ${EMP_ID}
     WHERE ${baseWhere} ${searchFilter}
+      AND r.NOTA IS NOT NULL AND TRIM(r.NOTA) <> ''
+      AND r.NOTA_MEMO IS NOT NULL AND TRIM(r.NOTA_MEMO) <> ''
     GROUP BY r.RUBRO_ID, r.EMP_ID, r.RUBRO_PADRE_ID, r.RUBRO, r.RUBRO_PATH, r.IMAGEN, r.NOTA, r.NOTA_MEMO
     ORDER BY r.RUBRO_PATH
   `;
@@ -877,23 +879,33 @@ app.get('/rubros', authenticateAPIKey, (req, res) => {
 
       // Process results and safely trim strings
       const result = rubros.map(rubro => {
+        const nota = safeTrim(rubro.NOTA);
+        const notaMemo = safeTrim(rubro.NOTA_MEMO);
+        
+        // Split NOTA by comma - first part is rubro, rest is otrosNombres
+        let rubroName = '';
+        let otrosNombres = '';
+        
+        if (nota) {
+          const notaParts = nota.split(',');
+          rubroName = notaParts[0].trim();
+          if (notaParts.length > 1) {
+            otrosNombres = notaParts.slice(1).join(',').trim();
+          }
+        }
+        
         const item = {
           id: rubro.RUBRO_ID,
-          rubro: safeTrim(rubro.RUBRO) || '',
-          rubroPath: safeTrim(rubro.RUBRO_PATH) || ''
+          rubro: rubroName
         };
         
-        // Only include otrosNombres if it has a value (not null and not empty)
-        const otrosNombres = safeTrim(rubro.NOTA);
+        // Only include otrosNombres if it has a value
         if (otrosNombres && otrosNombres.trim() !== '') {
           item.otrosNombres = otrosNombres;
-              }
-        
-        // Only include notaMemo if it has a value (not null and not empty)
-        const notaMemo = safeTrim(rubro.NOTA_MEMO);
-        if (notaMemo && notaMemo.trim() !== '') {
-          item.notaMemo = notaMemo;
         }
+        
+        // Include categoria from NOTA_MEMO
+        item.categoria = notaMemo;
         
         return item;
         });
