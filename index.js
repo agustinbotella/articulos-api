@@ -442,7 +442,6 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
   const sql = `
     SELECT DISTINCT
       a.ART_ID,
-      a.MOD,
       a.MED, 
       a.NOTA,
       a.DESC_ETIQUETA,
@@ -535,7 +534,7 @@ app.get('/articles', authenticateAPIKey, (req, res) => {
         const relatedArticlesQuery = `
           SELECT 
             a.ART_ID,
-            TRIM(COALESCE(a.MOD, '') || ' ' || COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
+            TRIM(COALESCE(a.MED, '') || ' ' || COALESCE(a.NOTA, '') ||
                  CASE WHEN (SELECT LIST(aa_desde_rel.DESDE, ', ') 
                             FROM ART_APLICACION aa_desde_rel 
                             WHERE aa_desde_rel.ART_ID = a.ART_ID AND aa_desde_rel.DESDE IS NOT NULL) IS NOT NULL
